@@ -1,10 +1,6 @@
 # RoboAgent
 
-This is the implementation of "RoboAgent: Chaining Basic Capabilities for Embodied Task Planning"
+This is the implementation of "RoboAgent: Chaining Basic Capabilities for Embodied Task Planning" (CVPR 2026)
 
-## Environment
-
-## Evaluation on ALFWorld
-
-## Evaluation on EmbodiedBench-ALFRED
+Details will be updated soon.
 
