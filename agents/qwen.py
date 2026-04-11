@@ -1,9 +1,3 @@
-import json
-import random
-from PIL import Image, ImageDraw, ImageFont
-import os
-import base64, io
-
 from qwen_vl_utils import process_vision_info
 
 # @title inference function

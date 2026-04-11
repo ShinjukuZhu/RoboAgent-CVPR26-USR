@@ -7,12 +7,10 @@ import yaml
 import time
 
 import alfworld
-from env_monkey_patch.aw import get_env_paths_solvable, env_reset_with_idx, modified_oracle_step, Thor_init_with_errors, Thor_step_with_errors
+from env_monkey_patch.aw import get_env_paths_solvable, env_reset_with_idx, modified_oracle_step
 alfworld.agents.environment.alfred_thor_env.AlfredThorEnv.get_env_paths = get_env_paths_solvable
 alfworld.agents.environment.alfred_thor_env.AlfredThorEnv.reset = env_reset_with_idx
 alfworld.agents.controller.OracleAgent.step = modified_oracle_step
-alfworld.agents.environment.alfred_thor_env.AlfredThorEnv.Thor.__init__ = Thor_init_with_errors
-alfworld.agents.environment.alfred_thor_env.AlfredThorEnv.Thor.step = Thor_step_with_errors
 
 import alfworld.agents
 from runners.aw_runner import AWRunner as Runner
@@ -23,12 +21,6 @@ import numpy as np
 import torch
 from alfworld.agents.environment import get_environment
 import alfworld.agents.modules.generic as generic
-
-
-qwen_path = "/root/blockdata/XPR/RoboAgent/CKPT"
-lora_path = None
-SAVE_PATH = "imgs/save_path"
-
 
 seed = 42
 random.seed(seed)
@@ -48,9 +40,11 @@ def load_config():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--start", type=int)
-    parser.add_argument("--end", type=int)
-    parser.add_argument("--split", type=str, default='train')
+    parser.add_argument("--start", type=int, default=0)
+    parser.add_argument("--end", type=int, default=200)
+    parser.add_argument("--split", type=str, default='eval_out_of_distribution')
+    parser.add_argument("--save_path", type=str, default='imgs/AW_eval')
+    parser.add_argument("--qwen_path", type=str, default='../CKPT')
     args = parser.parse_args()
     
     START = args.start
@@ -61,15 +55,15 @@ if __name__ == "__main__":
     }[SPLIT]
     SHUFFLE = False
     
-    save_path = SAVE_PATH + "-" + SPLIT
+    save_path = args.save_path + "-" + SPLIT
 
     config = load_config()
     env_type = 'AlfredThorEnv'
-    env = get_environment(env_type)(config, train_eval=SPLIT) # eval_out_of_distribution
+    env = get_environment(env_type)(config, train_eval=SPLIT)
     env = env.init_env(batch_size=1)
     if SHUFFLE:
         np.random.shuffle(env.json_file_list)
-    agent = Agent(qwen_path, lora_path)
+    agent = Agent(args.qwen_path)
 
     for i_episode in range(LEN):
         if i_episode >= END:
@@ -77,8 +71,7 @@ if __name__ == "__main__":
         if i_episode < START:
             continue
         
-        obs, info = env.reset(i=i_episode) # i=i_episode
-        # print(info['extra.gamefile'])
+        obs, info = env.reset(i=i_episode)
         
         task_instruction = obs[0].split("\n\nYour task is to: ")[1]
         _objs = obs[0].split(", you see")[1].split(".\n\nYour ")[0].split(",")
@@ -93,11 +86,10 @@ if __name__ == "__main__":
         print(objs)
         
         save_path_trial = os.path.join(save_path, "episode_%d" % i_episode)
-        os.makedirs(save_path_trial, exist_ok=True) #TODO
+        os.makedirs(save_path_trial, exist_ok=True)
         agent.reset(save_path_trial, obj_list=objs, )
         
-        class args2: pass
-        runner = Runner(env, agent, args2)
+        runner = Runner(env, agent)
         
         agent.process_task(None, task_instruction)
 

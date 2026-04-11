@@ -1,115 +1,38 @@
 import torch
-import numpy as np
 import cv2
-from collections import defaultdict
 
 import torch
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from agents.qwen import inference as qwen_inference
 from peft import PeftModel
 
-from agents.prompt import *
-import copy
-
-SIM_CLS = {
-    "alarm clock": "AlarmClock",
-"apple": "Apple",
-"sliced apple": "AppleSliced",
-"armchair": "ArmChair",
-"baseball bat": "BaseballBat",
-"basketball": "BasketBall",
-"bathtub": "Bathtub",
-"bed": "Bed",
-"book": "Book",
-"bowl": "Bowl",
-"box": "Box",
-"bread": "Bread",
-"sliced bread": "BreadSliced",
-"butterknife": "ButterKnife",
-"cd": "CD",
-"cabinet": "Cabinet",
-"candle": "Candle",
-"cart": "Cart",
-"cell phone": "CellPhone",
-"cloth": "Cloth",
-"coffee machine": "CoffeeMachine",
-"coffee table": "CoffeeTable",
-"countertop": "CounterTop",
-"credit card": "CreditCard",
-"cup": "Cup",
-"desk": "Desk",
-"desk lamp": "DeskLamp",
-"dining table": "DiningTable",
-"sponge": "DishSponge",
-"drawer": "Drawer",
-"dresser": "Dresser",
-"egg": "Egg",
-"floor lamp": "FloorLamp",
-"fork": "Fork",
-"fridge": "Fridge",
-"garbage can": "GarbageCan",
-"glass bottle": "Glassbottle",
-"towel": "HandTowel",
-"kettle": "Kettle",
-"key": "KeyChain",
-"knife": "Knife",
-"ladle": "Ladle",
-"laptop": "Laptop",
-"lettuce": "Lettuce",
-"sliced lettuce": "LettuceSliced",
-"microwave": "Microwave",
-"mug": "Mug",
-"newspaper": "Newspaper",
-"ottoman": "Ottoman",
-"pan": "Pan",
-"pen": "Pen",
-"pencil": "Pencil",
-"pepper shaker": "PepperShaker",
-"pillow": "Pillow",
-"plate": "Plate",
-"plunger": "Plunger",
-"pot": "Pot",
-"potato": "Potato",
-"sliced potato": "PotatoSliced",
-"remote control": "RemoteControl",
-"safe": "Safe",
-"salt shaker": "SaltShaker",
-"shelf": "Shelf",
-"side table": "SideTable",
-"sink": "Sink",
-"soap bar": "SoapBar",
-"soap bottle": "SoapBottle",
-"sofa": "Sofa",
-"spatula": "Spatula",
-"spoon": "Spoon",
-"spray bottle": "SprayBottle",
-"statue": "Statue",
-"stove burner": "StoveBurner",
-"tennis racket": "TennisRacket",
-"tissue box": "TissueBox",
-"toilet": "Toilet",
-"toilet paper": "ToiletPaper",
-"toilet paper hanger": "ToiletPaperHanger",
-"tomato": "Tomato",
-"sliced tomato": "TomatoSliced",
-"vase": "Vase",
-"watch": "Watch",
-"watering can": "WateringCan",
-"wine bottle": "WineBottle",
-}
-
 
 class Agent(object):
-    def __init__(self, vlm_model_path="CKPT/Qwen2.5VL_7B-Instruct", lora_path=None):
+    def __init__(self, vlm_model_path, env_name="alfworld"):
         self.vlm = Qwen2_5_VLForConditionalGeneration.from_pretrained(vlm_model_path, torch_dtype=torch.bfloat16, device_map="auto")
         self.vlm_processer = AutoProcessor.from_pretrained(vlm_model_path)
-        if lora_path:
-            self.vlm_ori = copy.deepcopy(self.vlm)
-            self.vlm = PeftModel.from_pretrained(self.vlm, lora_path)
-            print("Merging LoRA weights into base model...")
-            self.vlm = self.vlm.merge_and_unload()
+        
+        self.env_name = env_name
+        if env_name == "alfworld":
+            from agents.prompt_aw import prompt_og, prompt_sd, prompt_lpe, prompt_lpm, prompt_eg, prompt_es, prompt_ct
+            self.prompt_og = prompt_og
+            self.prompt_sd = prompt_sd
+            self.prompt_lpe = prompt_lpe
+            self.prompt_lpm = prompt_lpm
+            self.prompt_eg = prompt_eg
+            self.prompt_es = prompt_es
+            self.prompt_ct = prompt_ct
+        elif env_name == "eb-alfred":
+            from agents.prompt_ebalf import prompt_og, prompt_sd, prompt_lpe, prompt_lpm, prompt_eg, prompt_es, prompt_ct
+            self.prompt_og = prompt_og
+            self.prompt_sd = prompt_sd
+            self.prompt_lpe = prompt_lpe
+            self.prompt_lpm = prompt_lpm
+            self.prompt_eg = prompt_eg
+            self.prompt_es = prompt_es
+            self.prompt_ct = prompt_ct
         else:
-            self.vlm_ori = self.vlm
+            raise ValueError(f"Invalid environment name: {env_name}")
     
     def reset(self, save_path, obj_list):
         self.last_goto = None
@@ -124,6 +47,7 @@ class Agent(object):
         self.ability_buffer = []
         self.ability_buffer_idx = 0
         self.last_to_find = None
+        self.slice_idx = 3 # for assigning ID of the sliced object in alfworld
         
         with open(f"{self.save_path}/qwen_log.txt", "w") as f:
             f.write("BEGIN!!!\n")
@@ -140,7 +64,11 @@ class Agent(object):
     
     def process_feedback(self, message, last_action):
         assert last_action not in ["examine", "pass", "do nothing"]
-        assert last_action.split(" ")[0] in ["take", "open", "close", "put", "slice", "heat", "cool", "clean", "go", "use"], last_action
+        if self.env_name == "alfworld":
+            assert last_action.split(" ")[0] in ["take", "open", "close", "put", "slice", "heat", "cool", "clean", "go", "use"], last_action
+        elif self.env_name == "eb-alfred":
+            assert last_action.split(" ")[0] in ["pick", "open", "close", "put", "slice", "turn", "find"], last_action
+
         self.last_action = last_action
         aid = len(self.last_local_traj) // 2 + 1
         self.last_local_traj.append(f"[action {aid}] {last_action}")
@@ -148,17 +76,83 @@ class Agent(object):
         
         self.scene_description = ""
         if message:
-            if last_action.startswith("take "):
-                assert self.invent == "nothing"
-                self.invent = last_action.split("take ")[1].split(" from")[0]
-            elif last_action.startswith("put "):
-                assert self.invent != "nothing"
-                self.invent = "nothing"
-            elif last_action.startswith("go to"):
-                self.last_goto = last_action.split("go to ")[1]
+            if self.env_name == "alfworld":
+                if last_action.startswith("take "):
+                    self.invent = last_action.split("take ")[1].split(" from")[0]
+                elif last_action.startswith("put "):
+                    self.invent = "nothing"
+                    if message:
+                        self.slice_idx += 1
+                elif last_action.startswith("go to"):
+                    self.last_goto = last_action.split("go to ")[1]
+            elif self.env_name == "eb-alfred":
+                if last_action.startswith("pick "):
+                    self.invent = last_action.split("pick up the ")[1]
+                    if "_" in self.invent:
+                        self.invent = self.invent.split("_")[0]
+                elif last_action.startswith("put down "):
+                    self.invent = "nothing"
+                elif last_action.startswith("find a "):
+                    self.last_goto = last_action.split("find a ")[1]
+                    if "_" in self.last_goto:
+                        self.last_goto = self.last_goto.split("_")[0]
         return
-     
+    
     def get_qwen_action(self, ):
+        raw_actions = self.get_qwen_action_raw()
+        
+        exec_actions = [] # to be executed in the environment
+        actions = [] # to be passes to process_feedback
+
+        if self.env_name == "alfworld":
+            for raw_action in raw_actions:
+                for x in ["LettuceSliced", "AppleSliced", "PotatoSliced", "TomatoSliced", "BreadSliced"]:
+                    assert not f"{x} {None}" in raw_action
+                    if f"{x}" in raw_action:
+                        raw_action = raw_action.replace(f"{x}", f"sliced-{x[:-6]} {self.slice_idx}")
+                exec_actions.append(raw_action)
+            actions = exec_actions
+        elif self.env_name == "alfworld_text":
+            for raw_action in raw_actions:
+                for x in ["LettuceSliced", "AppleSliced", "PotatoSliced", "TomatoSliced", "BreadSliced"]:
+                    assert not f"{x} {None}" in raw_action
+                    if f"{x}" in raw_action:
+                        raw_action = raw_action.replace(f"{x}", f"sliced-{x[:-6]} {self.slice_idx}")
+                if raw_action.split(" ")[0] == "put":
+                    raw_action = raw_action.replace("put ", "move ")
+                exec_actions.append(raw_action)
+            actions = exec_actions
+        elif self.env_name == "eb-alfred":
+            for raw_action in raw_actions:
+                # rename some objects to match the skill set of EmbodiedBench
+                # generally this can be done by computing semantic similarity between the raw_action and the vocabulary of the environment, here we just use a rule-based matching for simplicity
+                raw_action = raw_action.replace("Spray bottle", "SprayBottle").replace("the sponge", "the DishSponge").replace(" Sliced ", " ").replace("Floor lamp", "FloorLamp").replace("Desk lamp", "DeskLamp").replace("lettuce", "Lettuce").replace("apple", "Apple").replace("potato", "Potato").replace("tomato", "Tomato").replace("bread", "Bread").replace("the Sponge", "the DishSponge").replace("the Key ", "the KeyChain ").replace("Garbage can", "GarbageCan").replace("the towel", "the HandTowel").replace("Inkpen", "Pen").replace("Watering can", "WateringCan").replace("Armchair", "ArmChair").replace(" sliced ", " ").replace("Glass bottle", "Glassbottle").replace("Soap bottle", "SoapBottle").replace("SlicedApple", "Apple").replace("SlicedLettuce", "Lettuce").replace("SlicedBread", "Bread").replace("SlicedTomato", "Tomato").replace("SlicedPotato", "Potato").replace("GlassBottle", "Glassbottle").replace("the knife", "the Knife").replace("AppleSliced", "Apple").replace("LettuceSliced", "Lettuce").replace("BreadSliced", "Bread").replace("TomatoSliced", "Tomato").replace("PotatoSliced", "Potato")
+                if raw_action.endswith("the Key"):
+                    raw_action = raw_action.replace("the Key", "the KeyChain")
+
+                # deal with the object index in EB's skill name
+                if raw_action.split(" ")[0] in ["find", "open", "close"]:
+                    if raw_action.endswith(" 1"):
+                        action_str = raw_action[:-2]
+                    else:
+                        action_str = " ".join(raw_action.split(" ")[:-1]) + "_" + raw_action.split(" ")[-1]
+                elif raw_action.split(" ")[0] in ["turn", "slice", "pick"]:
+                    if raw_action in ["pick up the Apple", "pick up the Lettuce", "pick up the Tomato", "pick up the Potato", "pick up the Bread"]:
+                        action_str = raw_action
+                    else:
+                        action_str = " ".join(raw_action.split(" ")[:-1])
+                elif raw_action.split(" ")[0] in ["put", "pass", "examine", "fail"]:
+                    action_str = raw_action
+                else:
+                    # print(raw_action)
+                    # raise NotImplementedError
+                    action_str = "fail"
+                
+                exec_actions.append(action_str)
+                actions.append(raw_action)
+        return exec_actions, actions
+
+    def get_qwen_action_raw(self, ):
         if self.ability_buffer_idx >= len(self.ability_buffer):
             self.ability_buffer = []
             ret = self.get_core_result()
@@ -192,8 +186,8 @@ class Agent(object):
                     self.core_history += "Grounding feedback: the target object is not found\n"
             else:
                 ocls = ability_res[0]["label"]
-                ocls = ocls.replace("sliced ", "")
-                assert self.last_goto is not None
+                if self.env_name == "alfworld":
+                    ocls = ocls.replace("sliced ", "")
                 if not self.core_history.strip().endswith("Grounding feedback: the target object is not found"):
                     self.core_history += f"Grounding feedback: the target object ({ocls}) is found at {self.last_goto}\n"
                 else:
@@ -202,7 +196,6 @@ class Agent(object):
             steps = ability_res
             self.last_local_traj = []
             self.exploration_subgoal = None
-            assert steps[0].startswith("go to "), steps
             return steps
         elif ability_name == "manipulation_planner":
             steps = ability_res
@@ -212,6 +205,7 @@ class Agent(object):
             self.scene_description = ability_res
         elif ability_name == "experience_summarization":
             self.core_history += f"Summarization feedback: {ability_res}\n"
+            self.manipulation_subgoal = None
         else:
             print(ability_name)
             raise NotImplementedError
@@ -222,10 +216,11 @@ class Agent(object):
         res = qwen_inference(
             self.vlm_processer, self.vlm, 
             [], 
-            prompt_ct.format(self.task_instruction, self.core_history),
+            self.prompt_ct.format(self.task_instruction, self.core_history),
             log_file=f"{self.save_path}/qwen_log.txt"
         )
-        assert res.startswith("Think:"), res
+        if "Query:" not in res and "query:" in res:
+            res = res.replace("query:", "Query:")
         if "Query:" in res:
             think_text = res.split("Query:")[0].split("Think:")[1].strip()
             queries_text = res.split("Query:")[1].strip()
@@ -245,9 +240,7 @@ class Agent(object):
             return True
         else:
             if "Stop" not in res:
-                # print("BAD! NO QUERY NO STOP!")
                 return False
-            assert "Stop" in res, res
             think_text = res.split("Stop")[0].split("Think:")[0].strip()
             return False
         
@@ -264,11 +257,17 @@ class Agent(object):
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [], 
-                prompt_eg.format(target_obj, self.observed_objects_list, self.explored),
+                self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored),
                 log_file=f"{self.save_path}/qwen_log.txt"
             ).strip().replace("{", "").replace("}", "").replace("<", "").replace(">", "")
             iii = 0
-            while res in self.explored or res.split(" ")[0] not in ["in", "on", "target"] or " ".join(res.split(" ")[1:]).lower() not in self.observed_objects_list:
+            while True:
+                if self.env_name == "alfworld":
+                    if not(res in self.explored or res.split(" ")[0] not in ["in", "on", "target"] or " ".join(res.split(" ")[1:]).lower() not in self.observed_objects_list):
+                        break
+                elif self.env_name == "eb-alfred":
+                    if not (res in self.explored or res.split(" ")[0] not in ["in", "on", "target"] or " ".join(res.split(" ")[1:]) not in self.observed_objects_list):
+                        break
                 iii += 1
                 more_args = {
                     "do_sample": True,
@@ -279,22 +278,22 @@ class Agent(object):
                 res = qwen_inference(
                     self.vlm_processer, self.vlm, 
                     [], 
-                    prompt_eg.format(target_obj, self.observed_objects_list, self.explored), more_args=more_args,
+                    self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored), more_args=more_args,
                     log_file=f"{self.save_path}/qwen_log.txt"
                 ).strip().replace("{", "").replace("}", "")
                 if iii > 10:
                     return None
                 
-            assert res not in self.explored, [prompt_eg.format(target_obj, self.observed_objects_list, self.explored), res]
+            assert res not in self.explored, [self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored), res]
             return res
         elif ability_name == "object_grounding":
             target_obj = args.split(" (hint")[0].split(" (except")[0]
-            if self.last_goto == target_obj: # shortcut!
+            if self.last_goto == target_obj: # shortcut
                 return [{"label": target_obj}]
             res = qwen_inference(
-                self.vlm_processer, self.vlm_ori if target_obj in SIM_CLS else self.vlm, 
+                self.vlm_processer, self.vlm, 
                 [self.cur_rgb_path], 
-                prompt_og.format(target_obj),
+                self.prompt_og.format(target_obj),
                 log_file=f"{self.save_path}/qwen_log.txt"
             ).strip()
             assert (res.startswith("```json") and res.endswith("```")) or res.lower() == "no", res
@@ -303,14 +302,13 @@ class Agent(object):
                 self.last_grounding_label = None
             else:
                 self.last_grounding_label = ret[0]["label"]
-                assert self.last_grounding_label in SIM_CLS or self.last_grounding_label in ["remote", "ice cream ladle", "cushion", "soup spoon", "sprayer", "soap", "ink pen"], self.last_grounding_label
             return ret 
         elif ability_name == "exploration_planner":
             assert self.exploration_subgoal
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [], 
-                prompt_lpe.format(self.exploration_subgoal),
+                self.prompt_lpe.format(self.exploration_subgoal),
                 log_file=f"{self.save_path}/qwen_log.txt"
             ).strip()
             assert res.startswith("[") and res.endswith("]"), res
@@ -323,7 +321,7 @@ class Agent(object):
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [], 
-                prompt_lpm.format(self.invent, self.last_goto, self.scene_description, manipulation_subgoal),
+                self.prompt_lpm.format(self.invent, self.last_goto, self.scene_description, manipulation_subgoal),
                 log_file=f"{self.save_path}/qwen_log.txt"
             ).strip()
             assert res.startswith("[") and res.endswith("]"), res
@@ -335,11 +333,13 @@ class Agent(object):
                 invent_des = f" Note that the agent is holding {self.invent}, which is shown at the bottom of the image. You can ignore it in your description. "
             else:
                 invent_des = ""
-            assert self.last_grounding_label is not None
+            # assert self.last_grounding_label is not None
+            if self.last_grounding_label is None:
+                return ""
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [self.cur_rgb_path], 
-                prompt_sd.format(self.last_grounding_label) + invent_des,
+                self.prompt_sd.format(self.last_grounding_label) + invent_des,
                 max_new_tokens=512,
                 log_file=f"{self.save_path}/qwen_log.txt"
             ).strip()
@@ -350,7 +350,7 @@ class Agent(object):
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [self.cur_rgb_path], 
-                prompt_es.format(self.manipulation_subgoal, "\n".join(self.last_local_traj)),
+                self.prompt_es.format(self.manipulation_subgoal, "\n".join(self.last_local_traj)),
                 log_file=f"{self.save_path}/qwen_log.txt"
             ).strip()
             return res
