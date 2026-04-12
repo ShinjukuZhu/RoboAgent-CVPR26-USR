@@ -1,11 +1,11 @@
 # RoboAgent
 
-This is the implementation of "[RoboAgent: Chaining Basic Capabilities for Embodied Task Planning](https://arxiv.org/abs/2604.07774)" (CVPR 2026)
+This is the implementation of "[RoboAgent: Chaining Basic Capabilities for Embodied Task Planning](https://arxiv.org/abs/2604.07774)" (CVPR 2026).
 
 Our model (a [Qwen2.5-VL-3B](https://github.com/qifan-han/Qwen2.5-VL) finetuned on [ALFRED](https://github.com/askforalfred/alfred)'s training set) is provided at [here](https://huggingface.co/woyut/RoboAgent_CVPR26).
 
 ## Evaluation on ALFWorld
-Please prepare the environment as follows
+Please prepare the environment as follows:
 ```sh
 conda create -n RoboAgent_AW python=3.12
 conda activate RoboAgent_AW
@@ -19,7 +19,7 @@ pip3 install qwen-vl-utils==0.0.14
 pip3 install alfworld[full]
 alfworld-download
 ```
-Then you can run the evaluation on ALFWorld's visual environment with
+Then you can run the evaluation on ALFWorld's visual environment with:
 ```sh
 xvfb-run --server-num=99 -s "-screen 0 1280x1024x24" python run_aw.py --qwen_path /path/to/ckpt --save_path /path/to/save/images/and/logs
 ```
@@ -31,7 +31,7 @@ Please build the environment (including the dataset) of EB-ALFRED following the 
 ```
 pip3 install transformers==4.57.0 peft==0.17.1 jinja2==3.1.6
 ```
-Then you can run the evaluation on EB-ALFRED with
+Then you can run the evaluation on EB-ALFRED with:
 ```sh
 xvfb-run --server-num=99 -s "-screen 0 1280x1024x24" python run_ebalf.py --qwen_path /path/to/ckpt --save_path /path/to/save/images/and/logs --data_path /path/to/EmbodiedBench/embodiedbench/envs/eb_alfred/data/splits/splits.json --split base --server-num 99
 ```
