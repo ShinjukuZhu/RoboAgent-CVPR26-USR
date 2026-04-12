@@ -26,10 +26,13 @@ from env_monkey_patch.eb_alf import EBAlfEnv_init_patch
 EBAlfEnv.__init__ = EBAlfEnv_init_patch
 
 
-os.environ['PYTHONHASHSEED'] = str(42)
-torch.manual_seed(42)
-np.random.seed(42)
-random.seed(42)
+seed = 42
+random.seed(seed)
+os.environ["PYTHONHASHSEED"] = str(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
