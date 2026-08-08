@@ -3,7 +3,7 @@ from embodiedbench.envs.eb_alfred.thor_connector import ThorConnector
 from embodiedbench.envs.eb_alfred.EBAlfEnv import EBAlfEnv, get_global_action_space
 
 
-ALFRED_REWARD_PATH = "/mnt/autodl_tmp1/zhuyanhao/code/EmbodiedBench/embodiedbench/envs/eb_alfred/models/config/rewards.json"
+ALFRED_REWARD_PATH = "/root/blockdata/XPR/RoboAgent/EmbodiedBench/embodiedbench/envs/eb_alfred/models/config/rewards.json"
 ValidEvalSets = [
     'base', 'common_sense', 'complex_instruction', 'spatial', 
     'visual_appearance', 'long_horizon'

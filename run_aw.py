@@ -22,7 +22,16 @@ import torch
 from alfworld.agents.environment import get_environment
 import alfworld.agents.modules.generic as generic
 
-seed = 42
+parser = argparse.ArgumentParser()
+parser.add_argument("--start", type=int, default=0)
+parser.add_argument("--end", type=int, default=200)
+parser.add_argument("--split", type=str, default='eval_out_of_distribution')
+parser.add_argument("--save_path", type=str, default='imgs/AW_eval')
+parser.add_argument("--qwen_path", type=str, default='../CKPT')
+parser.add_argument("--seed", type=int, default=42)
+args = parser.parse_args()
+
+seed = args.seed
 random.seed(seed)
 os.environ["PYTHONHASHSEED"] = str(seed)
 np.random.seed(seed)
@@ -39,13 +48,7 @@ def load_config():
     return config  
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--start", type=int, default=0)
-    parser.add_argument("--end", type=int, default=200)
-    parser.add_argument("--split", type=str, default='eval_out_of_distribution')
-    parser.add_argument("--save_path", type=str, default='imgs/AW_eval')
-    parser.add_argument("--qwen_path", type=str, default='../CKPT')
-    args = parser.parse_args()
+    pass
     
     START = args.start
     END = args.end

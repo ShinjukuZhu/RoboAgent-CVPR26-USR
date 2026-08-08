@@ -1,0 +1,110 @@
+"""LLMDet-backed Object Grounding with RoboAgent-compatible return format.
+
+Return contract (same as original OG):
+  - False  when not found
+  - [{"label": <str>, ...}] when found  (bbox optional; runner only needs label)
+"""
+from __future__ import annotations
+
+import os
+import re
+import threading
+import time
+from typing import Any, Optional
+
+_LOCK = threading.Lock()
+_MODEL = None
+_PROCESSOR = None
+_MODEL_ID = None
+_DEVICE = None
+
+
+def _normalize_query(target_obj: str) -> str:
+    """Turn 'Apple 1' / 'sliced Apple 2' into a detector text query."""
+    t = (target_obj or "").strip()
+    t = re.sub(r"\s*\(.*?\)\s*", " ", t).strip()
+    t = re.sub(r"\s+\d+$", "", t).strip()
+    t = re.sub(r"(?i)^sliced\s+", "", t).strip()
+    return t if t else (target_obj or "").strip()
+
+
+def _ensure_model():
+    global _MODEL, _PROCESSOR, _MODEL_ID, _DEVICE
+    if _MODEL is not None:
+        return
+    with _LOCK:
+        if _MODEL is not None:
+            return
+        import torch
+        from transformers import AutoModelForZeroShotObjectDetection, AutoProcessor
+
+        model_id = os.environ.get("ROBOAGENT_LLMDET_MODEL", "iSEE-Laboratory/llmdet_large")
+        local = os.environ.get("ROBOAGENT_LLMDET_PATH", "").strip()
+        load_id = local if local else model_id
+        device = os.environ.get("ROBOAGENT_LLMDET_DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
+        _PROCESSOR = AutoProcessor.from_pretrained(load_id)
+        _MODEL = AutoModelForZeroShotObjectDetection.from_pretrained(load_id)
+        _MODEL.to(device)
+        _MODEL.eval()
+        _MODEL_ID = load_id
+        _DEVICE = device
+
+
+def ground(image_path: str, target_obj: str, threshold: Optional[float] = None) -> Any:
+    """Run LLMDet OG. Returns False or list[dict] with at least 'label'."""
+    from PIL import Image
+    import torch
+
+    _ensure_model()
+    thr = threshold
+    if thr is None:
+        thr = float(os.environ.get("ROBOAGENT_LLMDET_THRESHOLD", "0.35"))
+
+    query = _normalize_query(target_obj)
+    # Keep a short phrase form; LLMDet examples use "a cat"
+    text_labels = [[query, f"a {query.lower()}"]]
+
+    image = Image.open(image_path).convert("RGB")
+    inputs = _PROCESSOR(images=image, text=text_labels, return_tensors="pt")
+    inputs = {k: v.to(_DEVICE) if hasattr(v, "to") else v for k, v in inputs.items()}
+
+    t0 = time.time()
+    with torch.no_grad():
+        outputs = _MODEL(**inputs)
+    latency_ms = (time.time() - t0) * 1000.0
+
+    results = _PROCESSOR.post_process_grounded_object_detection(
+        outputs,
+        threshold=thr,
+        target_sizes=[(image.height, image.width)],
+        text_labels=text_labels,
+    )
+    result = results[0]
+    scores = result.get("scores", [])
+    boxes = result.get("boxes", [])
+    labels = result.get("text_labels") or result.get("labels") or []
+
+    meta = {
+        "model_id": _MODEL_ID,
+        "query": query,
+        "threshold": thr,
+        "latency_ms": round(latency_ms, 2),
+        "n_dets": int(len(scores)) if scores is not None else 0,
+    }
+
+    if scores is None or len(scores) == 0:
+        return False, meta
+
+    # Pick highest-score detection.
+    best_i = int(scores.argmax().item()) if hasattr(scores, "argmax") else 0
+    best_score = float(scores[best_i])
+    box = None
+    if boxes is not None and len(boxes) > best_i:
+        box = [float(x) for x in boxes[best_i].tolist()]
+    # Use original target_obj as label to keep downstream (history/SD) stable,
+    # matching the last_goto shortcut style.
+    det = {"label": target_obj, "score": best_score, "box": box, "query": query}
+    if labels is not None and len(labels) > best_i:
+        det["det_label"] = labels[best_i]
+    meta["best_score"] = best_score
+    return [det], meta

@@ -11,7 +11,6 @@ class EBAlfRunner():
         
         self.last_recep = None
         self.last_info = None
-        self.consecutive_failures = 0
 
     def run(self, ):
         steps = 0
@@ -35,13 +34,8 @@ class EBAlfRunner():
                 if done:
                     gcr = info['task_success']
                     break
-                if info['last_action_success'] == 0:
-                    self.consecutive_failures += 1
-                    if exec_action.split(" ")[0] not in ["open", "close"]:
-                        if self.consecutive_failures >= 3:
-                            break
-                else:
-                    self.consecutive_failures = 0
+                if info['last_action_success'] == 0 and exec_action.split(" ")[0] not in ["open", "close"]: # to save evaluation time, we may give up when the previous action failed, but the failure of open/close is normally not that severe
+                    break
             if done or exec_action == "fail":
                 break
         return gcr

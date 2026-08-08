@@ -4,12 +4,40 @@ import cv2
 import torch
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from agents.qwen import inference as qwen_inference
+from agents.stage0_utils import parse_og_response, append_trace
+from agents.llmdet_og import ground as llmdet_ground
+from agents.llmdet_qwen_og import ground_cascade as llmdet_qwen_ground
+from agents.og_cascade_gated import ground_gated as llmdet_qwen_gated_ground
+from agents.og_cascade_gated_v2 import ground_gated_v2 as llmdet_qwen_gated_v2_ground
+from agents.og_remap_only import ground_remap_only as llmdet_qwen_remap_ground
+from agents.usr_og_backend import ground_usr as llmdet_qwen_usr_ground
+from agents.usr_sd_eg_backend import sd_usr_backend, eg_usr_backend
+from agents.eg_explore_backend import propose_explore_eg as explore_eg_naive
+from agents.eg_explore_backend import propose_explore_eg as explore_eg_aligned
+from agents.eg_adapter_backend import propose_eg_adapter as explore_eg_adapter
+from agents.eg_lora_backend import propose_eg_lora as explore_eg_lora
+from agents.usr_channel import get_channel, reset_channel
+from agents.skill_alignment_og import ground_aligned as llmdet_qwen_aligned_ground
+from agents.naive_detector import ground_naive as naive_detector_ground
+from agents.eg_llm_backend import propose_eg, propose_eg_ft_qwen
+from agents.skill_memory import SkillMemory, env_mode as skill_memory_env_mode
+from agents.florence2_sd import describe_naive, describe_adapter
+from agents.sd_florence_cascade import describe_cascade as florence_qwen_verify_describe
+import os
+import time
 from peft import PeftModel
 
 
 class Agent(object):
     def __init__(self, vlm_model_path, env_name="alfworld"):
+        import os as _os
         self.vlm = Qwen2_5_VLForConditionalGeneration.from_pretrained(vlm_model_path, torch_dtype=torch.bfloat16, device_map="auto")
+        _br_adapt = _os.environ.get("ROBOAGENT_BRAIN_ADAPTER", "").strip()
+        if _br_adapt:
+            from peft import PeftModel
+            self.vlm = PeftModel.from_pretrained(self.vlm, _br_adapt)
+            self.vlm.eval()
+            print("BRAIN_ADAPTER_LOADED:", _br_adapt)
         self.vlm_processer = AutoProcessor.from_pretrained(vlm_model_path)
         
         self.env_name = env_name
@@ -37,9 +65,18 @@ class Agent(object):
     def reset(self, save_path, obj_list):
         self.last_goto = None
         self.save_path = save_path
+        # Phase3 Skill Memory: log-only by default; adapt OFF (no cross-ep leak).
+        self._skill_memory = None
+        _sm_mode = skill_memory_env_mode()
+        if _sm_mode in ("log", "adapt"):
+            self._skill_memory = SkillMemory(
+                enable_cross_episode_adapt=False,  # hard OFF regardless of env
+                persist_path=f"{self.save_path}/skill_memory.jsonl",
+            )
         self.save_i = 0
         
         self.observed_objects_list = [x for x in sorted(obj_list)]
+        reset_channel()
         self.core_history = ""
         self.explored = []
         self.invent = "nothing"
@@ -47,7 +84,15 @@ class Agent(object):
         self.ability_buffer = []
         self.ability_buffer_idx = 0
         self.last_to_find = None
+        self.last_grounding_label = None
+        self.last_og_usr = None
+        self.exploration_subgoal = None
         self.slice_idx = 3 # for assigning ID of the sliced object in alfworld
+        # initial placeholder frame so early image-based skills have a path
+        import numpy as _np
+        _placeholder = _np.zeros((480, 640, 3), dtype=_np.uint8)
+        cv2.imwrite(f"{self.save_path}/step_0.png", _placeholder)
+        self.cur_rgb_path = f"{self.save_path}/step_0.png"
         
         with open(f"{self.save_path}/qwen_log.txt", "w") as f:
             f.write("BEGIN!!!\n")
@@ -163,13 +208,25 @@ class Agent(object):
         
         ability_name, ability_args = self.ability_buffer[self.ability_buffer_idx]
         ability_res = self.get_ability_result(ability_name, ability_args)
+        try:
+            _ok = ability_res is not None and ability_res is not False and ability_res != ""
+            self._maybe_record_skill(ability_name, ability_args, ability_res, _ok)
+        except Exception:
+            pass
+
         self.ability_buffer_idx += 1
         if ability_name == "exploration_guidance":
             self.last_to_find = ability_args    
             
             place = ability_res
             if place is None:
-                return ["fail"]
+                self.core_history += "Exploration feedback: all locations exhausted. Consider alternative strategy.\n"
+                # Drain remaining queued abilities (e.g. exploration_planner)
+                # so we re-enter the scheduler instead of asserting on
+                # empty exploration_subgoal.
+                self.ability_buffer = []
+                self.ability_buffer_idx = 0
+                return ["pass"]
             self.explored.append(place)
             if place.startswith("target "):
                 place = "arrive at " + place[len("target "):]
@@ -217,8 +274,17 @@ class Agent(object):
             self.vlm_processer, self.vlm, 
             [], 
             self.prompt_ct.format(self.task_instruction, self.core_history),
-            log_file=f"{self.save_path}/qwen_log.txt"
+            log_file=f"{self.save_path}/qwen_log.txt",
+            role="scheduler",
+            save_path=self.save_path,
         )
+        append_trace(self.save_path, {
+            "event": "scheduler_raw",
+            "role": "scheduler",
+            "raw_output": res,
+            "has_query": "Query:" in res or "query:" in res,
+            "has_stop": "Stop" in res,
+        })
         if "Query:" not in res and "query:" in res:
             res = res.replace("query:", "Query:")
         if "Query:" in res:
@@ -230,9 +296,18 @@ class Agent(object):
             else:
                 self.core_history += "Query: " + queries_text + "\n"
             queries = queries_text.split("\n")
-            queries = [q.split(". ")[1].strip() for q in queries]
+            parsed_q = []
+            for q in queries:
+                q = q.strip()
+                if not q:
+                    continue
+                # prefer "<n>. skill(args)" (FT Brain), fallback "skill(args)" (Base Brain)
+                if ". " in q and q.split(". ")[1].strip():
+                    q = q.split(". ")[1].strip()
+                parsed_q.append(q)
+            queries = parsed_q
             for iq, query in enumerate(queries):
-                ability_name = query.split("(")[0]
+                ability_name = query.split("(")[0].strip()
                 args = "(".join(query.split("(")[1:])
                 assert args.endswith(")"), args
                 args = args[:-1]
@@ -245,6 +320,28 @@ class Agent(object):
             return False
         
             
+
+    def _maybe_record_skill(self, skill: str, inputs, outputs, success: bool, failure_type=None):
+        sm = getattr(self, "_skill_memory", None)
+        if sm is None:
+            return
+        try:
+            sm.record(
+                skill,
+                inputs if isinstance(inputs, dict) else {"args": inputs},
+                outputs,
+                bool(success),
+                failure_type=failure_type,
+                episode_id=str(getattr(self, "episode_id", "") or getattr(self, "cur_episode", "")),
+                step=int(getattr(self, "step_count", -1) or -1),
+            )
+        except Exception as e:
+            # never break the agent for logging
+            try:
+                append_trace(self.save_path, {"event": "skill_memory_error", "error": str(e)[:300]})
+            except Exception:
+                pass
+
     def get_ability_result(self, ability_name, args):
         if ability_name == "exploration_guidance":
             if args == self.last_to_find:
@@ -254,11 +351,126 @@ class Agent(object):
             else:
                 self.explored = []
             target_obj = args
+            eg_backend = os.environ.get("ROBOAGENT_EG_BACKEND", "qwen").strip().lower()
+            if eg_backend in ("explore_naive", "naive_explore"):
+                place = explore_eg_naive(
+                    target_obj, self.observed_objects_list, self.explored,
+                    env_name=self.env_name, variant="naive")
+                append_trace(self.save_path, {
+                    "event": "ability_parsed", "role": "exploration_guidance",
+                    "backend": eg_backend, "args": target_obj, "parsed": place,
+                })
+                return place
+            if eg_backend in ("explore_aligned", "aligned_explore"):
+                place = explore_eg_aligned(
+                    target_obj, self.observed_objects_list, self.explored,
+                    env_name=self.env_name, variant="aligned")
+                append_trace(self.save_path, {
+                    "event": "ability_parsed", "role": "exploration_guidance",
+                    "backend": eg_backend, "args": target_obj, "parsed": place,
+                })
+                return place
+            if eg_backend in ("explore_adapter", "adapter_explore", "explore"):
+                place = explore_eg_adapter(
+                    target_obj, self.observed_objects_list, self.explored,
+                    env_name=self.env_name)
+                append_trace(self.save_path, {
+                    "event": "ability_parsed", "role": "exploration_guidance",
+                    "backend": eg_backend, "args": target_obj, "parsed": place,
+                })
+                return place
+            if eg_backend in ("eg_lora", "lora"):
+                place = explore_eg_lora(
+                    target_obj, self.observed_objects_list, self.explored,
+                    env_name=self.env_name)
+                _eg_trace_extra = {}
+                if os.environ.get("ROBOAGENT_USR_CHANNEL", "0") == "1" and place:
+                    try:
+                        from agents.usr_sd_eg import eg_raw_to_usr
+                        u = eg_raw_to_usr(place, observed_objects=self.observed_objects_list)
+                        get_channel().publish("eg", u)
+                        get_channel().log_decision("eg", place)
+                        _eg_trace_extra["usr"] = u
+                    except Exception:
+                        pass
+                _tr = {"event": "ability_parsed", "role": "exploration_guidance",
+                       "backend": eg_backend, "args": target_obj, "parsed": place}
+                _tr.update(_eg_trace_extra)
+                append_trace(self.save_path, _tr)
+                return place
+            if eg_backend in ("validated_ft", "qwen25_7b", "qwen2.5-7b-instruct", "qwen25_7b_instruct"):
+                _eg_prompt = self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored)
+
+                def _eg_qwen_infer(prompt_text: str, more_args=None):
+                    kw = dict(
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="exploration_guidance",
+                        save_path=self.save_path,
+                    )
+                    if more_args is not None:
+                        kw["more_args"] = more_args
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [],
+                        prompt_text,
+                        **kw,
+                    )
+
+                if eg_backend == "validated_ft":
+                    place = propose_eg_ft_qwen(
+                        target_obj,
+                        self.observed_objects_list,
+                        self.explored,
+                        _eg_prompt,
+                        _eg_qwen_infer,
+                        env_name=self.env_name,
+                    )
+                else:
+                    place = propose_eg(
+                        target_obj,
+                        self.observed_objects_list,
+                        self.explored,
+                        _eg_prompt,
+                        env_name=self.env_name,
+                        qwen_infer=_eg_qwen_infer,
+                    )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "exploration_guidance",
+                    "backend": eg_backend,
+                    "args": target_obj,
+                    "parsed": place,
+                })
+                return place
+
+            if eg_backend == "usr":
+                res = qwen_inference(
+                    self.vlm_processer, self.vlm, 
+                    [], 
+                    self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored),
+                    log_file=f"{self.save_path}/qwen_log.txt",
+                    role="exploration_guidance",
+                    save_path=self.save_path,
+                ).strip().replace("{", "").replace("}", "").replace("<", "").replace(">", "")
+                egp = eg_usr_backend(res, observed_objects=self.observed_objects_list)
+                get_channel().publish("eg", egp["usr"])
+                get_channel().log_decision("eg", egp["text"] or "none")
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "exploration_guidance",
+                    "backend": "usr",
+                    "args": target_obj,
+                    "parsed": egp["text"],
+                    "usr": egp["usr"],
+                })
+                return egp["text"]
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [], 
                 self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored),
-                log_file=f"{self.save_path}/qwen_log.txt"
+                log_file=f"{self.save_path}/qwen_log.txt",
+                role="exploration_guidance",
+                save_path=self.save_path,
             ).strip().replace("{", "").replace("}", "").replace("<", "").replace(">", "")
             iii = 0
             while True:
@@ -279,42 +491,372 @@ class Agent(object):
                     self.vlm_processer, self.vlm, 
                     [], 
                     self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored), more_args=more_args,
-                    log_file=f"{self.save_path}/qwen_log.txt"
+                    log_file=f"{self.save_path}/qwen_log.txt",
+                    role="exploration_guidance",
+                    save_path=self.save_path,
                 ).strip().replace("{", "").replace("}", "")
                 if iii > 10:
                     return None
                 
             assert res not in self.explored, [self.prompt_eg.format(target_obj, self.observed_objects_list, self.explored), res]
+            append_trace(self.save_path, {
+                "event": "ability_parsed",
+                "role": "exploration_guidance",
+                "args": target_obj,
+                "parsed": res,
+                "retries": iii,
+            })
             return res
         elif ability_name == "object_grounding":
             target_obj = args.split(" (hint")[0].split(" (except")[0]
             if self.last_goto == target_obj: # shortcut
                 return [{"label": target_obj}]
+            og_backend = os.environ.get("ROBOAGENT_OG_BACKEND", "qwen").lower()
+            if og_backend == "llmdet":
+                ret, meta = llmdet_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                )
+                # Keep qwen_log format roughly compatible for offline tools.
+                with open(f"{self.save_path}/qwen_log.txt", "a") as f:
+                    f.write(self.cur_rgb_path + "\n")
+                    f.write(self.prompt_og.format(target_obj) + "\n")
+                    f.write("--------------------------------------------\n")
+                    if ret is False:
+                        f.write("no\n")
+                    else:
+                        f.write("```json\n" + str(ret) + "\n```\n")
+                    f.write("\n\n=============================================\n\n")
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": "llmdet",
+                    "args": target_obj,
+                    "raw_output": "no" if ret is False else ret,
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                return ret
+            if og_backend in ("llmdet_qwen", "cascade"):
+                base_prompt = self.prompt_og.format(target_obj)
+
+                def _qwen_og(aug_prompt: str) -> str:
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        aug_prompt,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="object_grounding",
+                        save_path=self.save_path,
+                    ).strip()
+
+                ret, meta = llmdet_qwen_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    base_prompt,
+                    _qwen_og,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": "llmdet_qwen",
+                    "args": target_obj,
+                    "raw_output": meta.get("qwen_raw", "no" if ret is False else ret),
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                return ret
+            if og_backend in (
+                "llmdet_qwen_gated",
+                "gated_cascade",
+                "llmdet_qwen_gated_v2",
+                "gated_cascade_v2",
+            ):
+                base_prompt = self.prompt_og.format(target_obj)
+
+                def _qwen_og_gated(aug_prompt: str) -> str:
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        aug_prompt,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="object_grounding",
+                        save_path=self.save_path,
+                    ).strip()
+
+                ret, meta = llmdet_qwen_gated_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    base_prompt,
+                    _qwen_og_gated,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": og_backend,
+                    "args": target_obj,
+                    "raw_output": meta.get("qwen_raw", "no" if ret is False else ret),
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                return ret
+            if og_backend in ("llmdet_qwen_gated_v2", "gated_cascade_v2"):
+                base_prompt = self.prompt_og.format(target_obj)
+
+                def _qwen_og_gated_v2(aug_prompt: str) -> str:
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        aug_prompt,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="object_grounding",
+                        save_path=self.save_path,
+                    ).strip()
+
+                ret, meta = llmdet_qwen_gated_v2_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    base_prompt,
+                    _qwen_og_gated_v2,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": "llmdet_qwen_gated_v2",
+                    "args": target_obj,
+                    "raw_output": meta.get("qwen_raw", "no" if ret is False else ret),
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                return ret
+
+            if og_backend in ("llmdet_qwen_usr", "usr"):
+                base_prompt = self.prompt_og.format(target_obj)
+
+                def _qwen_og_usr(aug_prompt: str) -> str:
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        aug_prompt,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="object_grounding",
+                        save_path=self.save_path,
+                    ).strip()
+
+                ret, meta = llmdet_qwen_usr_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    base_prompt,
+                    _qwen_og_usr,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": og_backend,
+                    "args": target_obj,
+                    "raw_output": meta.get("qwen_raw", "no" if ret is False else ret),
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                    "usr": meta.get("usr"),
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                if meta.get("usr"):
+                    get_channel().publish("og", meta["usr"])
+                    get_channel().log_decision("og", "grounded" if ret is not False else "not_found")
+                return ret
+            if og_backend in ("llmdet_qwen_remap", "remap_only", "llmdet_qwen_remap_only"):
+                base_prompt = self.prompt_og.format(target_obj)
+
+                def _qwen_og_remap(aug_prompt: str) -> str:
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        aug_prompt,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="object_grounding",
+                        save_path=self.save_path,
+                    ).strip()
+
+                ret, meta = llmdet_qwen_remap_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    base_prompt,
+                    _qwen_og_remap,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": og_backend,
+                    "args": target_obj,
+                    "raw_output": meta.get("qwen_raw", "no" if ret is False else ret),
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                    "usr": meta.get("usr"),
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                if os.environ.get("ROBOAGENT_USR_CHANNEL", "0") == "1":
+                    try:
+                        from agents.usr_og_backend import _found_usr, _no_det_usr
+                        if ret is False:
+                            u = _no_det_usr(meta)
+                        else:
+                            u = _found_usr(ret[0]["label"], meta)
+                        get_channel().publish("og", u)
+                        get_channel().log_decision("og", "grounded" if ret is not False else "not_found")
+                        self.last_og_usr = u
+                        meta["usr"] = u
+                    except Exception:
+                        pass
+                return ret
+            if og_backend in ("llmdet_qwen_aligned", "skill_alignment", "aligned"):
+                base_prompt = self.prompt_og.format(target_obj)
+
+                def _qwen_og_aligned(aug_prompt: str) -> str:
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        aug_prompt,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="object_grounding",
+                        save_path=self.save_path,
+                    ).strip()
+
+                ret, meta = llmdet_qwen_aligned_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    base_prompt,
+                    _qwen_og_aligned,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                    env_name=self.env_name,
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": og_backend,
+                    "args": target_obj,
+                    "raw_output": meta.get("qwen_raw", "no" if ret is False else ret),
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                return ret
+            if og_backend in ("naive_detector", "naive"):
+                ret, meta = naive_detector_ground(
+                    self.cur_rgb_path,
+                    target_obj,
+                    last_goto=self.last_goto,
+                    observed_objects=getattr(self, "observed_objects_list", None),
+                    env_name=self.env_name,
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "object_grounding",
+                    "backend": og_backend,
+                    "args": target_obj,
+                    "raw_output": "no" if ret is False else ret,
+                    "parsed_ok": ret is not False,
+                    "parsed": ret,
+                    "meta": meta,
+                })
+                if ret == False:
+                    self.last_grounding_label = None
+                else:
+                    self.last_grounding_label = ret[0]["label"]
+                return ret
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [self.cur_rgb_path], 
                 self.prompt_og.format(target_obj),
-                log_file=f"{self.save_path}/qwen_log.txt"
+                log_file=f"{self.save_path}/qwen_log.txt",
+                role="object_grounding",
+                save_path=self.save_path,
             ).strip()
             assert (res.startswith("```json") and res.endswith("```")) or res.lower() == "no", res
-            ret = eval(res[8:-3].strip()) if (res.startswith("```json") and res.endswith("```")) else False
+            ret = parse_og_response(res)
+            append_trace(self.save_path, {
+                "event": "ability_parsed",
+                "role": "object_grounding",
+                "backend": "qwen",
+                "args": target_obj,
+                "raw_output": res,
+                "parsed_ok": ret is not False,
+                "parsed": ret,
+            })
             if ret == False:
                 self.last_grounding_label = None
             else:
                 self.last_grounding_label = ret[0]["label"]
             return ret 
         elif ability_name == "exploration_planner":
-            assert self.exploration_subgoal
+            if self.exploration_subgoal is None:
+                self.ability_buffer = []
+                self.ability_buffer_idx = 0
+                return ["pass"]
             res = qwen_inference(
                 self.vlm_processer, self.vlm, 
                 [], 
                 self.prompt_lpe.format(self.exploration_subgoal),
-                log_file=f"{self.save_path}/qwen_log.txt"
+                log_file=f"{self.save_path}/qwen_log.txt",
+                role="exploration_planner",
+                save_path=self.save_path,
             ).strip()
             assert res.startswith("[") and res.endswith("]"), res
             steps = res[1:-1].split(",")
             assert len(steps), res
-            return [x.strip() for x in steps]
+            steps = [x.strip() for x in steps]
+            append_trace(self.save_path, {
+                "event": "ability_parsed",
+                "role": "exploration_planner",
+                "args": self.exploration_subgoal,
+                "raw_output": res,
+                "parsed": steps,
+            })
+            return steps
         elif ability_name == "manipulation_planner":
             manipulation_subgoal = args
             self.manipulation_subgoal = manipulation_subgoal
@@ -322,12 +864,22 @@ class Agent(object):
                 self.vlm_processer, self.vlm, 
                 [], 
                 self.prompt_lpm.format(self.invent, self.last_goto, self.scene_description, manipulation_subgoal),
-                log_file=f"{self.save_path}/qwen_log.txt"
+                log_file=f"{self.save_path}/qwen_log.txt",
+                role="manipulation_planner",
+                save_path=self.save_path,
             ).strip()
             assert res.startswith("[") and res.endswith("]"), res
             steps = res[1:-1].split(",")
             assert len(steps), res
-            return [x.strip() for x in steps]
+            steps = [x.strip() for x in steps]
+            append_trace(self.save_path, {
+                "event": "ability_parsed",
+                "role": "manipulation_planner",
+                "args": manipulation_subgoal,
+                "raw_output": res,
+                "parsed": steps,
+            })
+            return steps
         elif ability_name == "scene_description":
             if self.invent != "nothing":
                 invent_des = f" Note that the agent is holding {self.invent}, which is shown at the bottom of the image. You can ignore it in your description. "
@@ -336,13 +888,131 @@ class Agent(object):
             # assert self.last_grounding_label is not None
             if self.last_grounding_label is None:
                 return ""
-            res = qwen_inference(
-                self.vlm_processer, self.vlm, 
-                [self.cur_rgb_path], 
-                self.prompt_sd.format(self.last_grounding_label) + invent_des,
-                max_new_tokens=512,
-                log_file=f"{self.save_path}/qwen_log.txt"
-            ).strip()
+            sd_comp = os.environ.get("ROBOAGENT_SD_COMP", "").strip().lower()
+            sd_target_label = self.last_grounding_label
+            if sd_comp == "none":
+                sd_target_label = None
+            elif sd_comp == "raw":
+                sd_target_label = getattr(self, "last_det_query", None) or self.last_grounding_label
+            elif sd_comp == "usr":
+                sd_target_label = getattr(self, "last_usr_class", None) or self.last_grounding_label
+            elif sd_comp == "oracle":
+                sd_target_label = self.last_grounding_label
+            sd_backend = os.environ.get("ROBOAGENT_SD_BACKEND", "qwen").lower()
+            if sd_backend == "usr":
+                usr_ch = get_channel()
+                if os.environ.get("ROBOAGENT_USR_CHANNEL", "0") == "1" and usr_ch.has("og"):
+                    sd_target_label = usr_ch.get_field("og", "object.class") or sd_target_label
+                if sd_target_label:
+                    _sd_prompt = self.prompt_sd.format(sd_target_label) + invent_des
+                else:
+                    _sd_prompt = ("<image>\nThis is an egocentric image observed by a robotic "
+                                  "household agent. Please describe the scene.") + invent_des
+                res = qwen_inference(
+                    self.vlm_processer, self.vlm, 
+                    [self.cur_rgb_path], 
+                    _sd_prompt,
+                    max_new_tokens=512,
+                    log_file=f"{self.save_path}/qwen_log.txt",
+                    role="scene_description",
+                    save_path=self.save_path,
+                ).strip()
+                sdp = sd_usr_backend(res, target=sd_target_label)
+                usr_ch.publish("sd", sdp["usr"])
+                usr_ch.log_decision("sd", "described")
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "scene_description",
+                    "backend": "usr",
+                    "comp_mode": sd_comp,
+                    "args": sd_target_label,
+                    "raw_output": res,
+                    "parsed": sdp["text"],
+                    "usr": sdp["usr"],
+                })
+                return sdp["text"]
+
+            if sd_backend in ("florence2_qwen_verify", "florence2_verify", "florence2_gated"):
+                def _sd_qwen_infer(prompt_text: str, more_args=None):
+                    kw = dict(
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="scene_description",
+                        save_path=self.save_path,
+                    )
+                    if more_args is not None:
+                        kw["more_args"] = more_args
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        prompt_text,
+                        **kw,
+                    )
+                desc = florence_qwen_verify_describe(
+                    self.cur_rgb_path,
+                    self.last_grounding_label,
+                    self.invent != "nothing",
+                    self.prompt_sd,
+                    _sd_qwen_infer,
+                    save_path=self.save_path,
+                )
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "scene_description",
+                    "backend": sd_backend,
+                    "args": args,
+                    "parsed": desc,
+                })
+                return desc
+            if sd_backend in ("florence2_naive", "florence2"):
+                res = describe_naive(
+                    self.cur_rgb_path,
+                    self.last_grounding_label,
+                    invent=self.invent,
+                )
+                log_sd_res = res
+            elif sd_backend in ("florence2_adapter", "florence2_cascade"):
+                def _qwen_sd_infer(prompt):
+                    return qwen_inference(
+                        self.vlm_processer, self.vlm,
+                        [self.cur_rgb_path],
+                        prompt,
+                        max_new_tokens=512,
+                        log_file=f"{self.save_path}/qwen_log.txt",
+                        role="scene_description",
+                        save_path=self.save_path,
+                    ).strip()
+                res = describe_adapter(
+                    self.cur_rgb_path,
+                    self.last_grounding_label,
+                    _qwen_sd_infer,
+                    invent=self.invent,
+                )
+                log_sd_res = res
+            else:
+                if sd_target_label:
+                    _sd_prompt = self.prompt_sd.format(sd_target_label) + invent_des
+                else:
+                    _sd_prompt = ("<image>\nThis is an egocentric image observed by a robotic "
+                                  "household agent. Please describe the scene.") + invent_des
+                res = qwen_inference(
+                    self.vlm_processer, self.vlm, 
+                    [self.cur_rgb_path], 
+                    _sd_prompt,
+                    max_new_tokens=512,
+                    log_file=f"{self.save_path}/qwen_log.txt",
+                    role="scene_description",
+                    save_path=self.save_path,
+                ).strip()
+                log_sd_res = res
+
+
+            append_trace(self.save_path, {
+                "event": "ability_parsed",
+                "role": "scene_description",
+                "args": self.last_grounding_label,
+                "raw_output": res,
+                "parsed": res,
+            })
             return res
         elif ability_name == "experience_summarization":
             assert len(self.last_local_traj)
@@ -351,8 +1021,17 @@ class Agent(object):
                 self.vlm_processer, self.vlm, 
                 [self.cur_rgb_path], 
                 self.prompt_es.format(self.manipulation_subgoal, "\n".join(self.last_local_traj)),
-                log_file=f"{self.save_path}/qwen_log.txt"
+                log_file=f"{self.save_path}/qwen_log.txt",
+                role="experience_summarization",
+                save_path=self.save_path,
             ).strip()
+            append_trace(self.save_path, {
+                "event": "ability_parsed",
+                "role": "experience_summarization",
+                "args": self.manipulation_subgoal,
+                "raw_output": res,
+                "parsed": res,
+            })
             return res
         else:
             print(ability_name)
