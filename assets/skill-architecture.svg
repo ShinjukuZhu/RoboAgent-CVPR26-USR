@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="560" viewBox="0 0 1180 560" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1711" height="812" viewBox="0 0 1711 812" role="img" aria-labelledby="title desc">
+
+  <g transform="scale(1.45)">
+
   <title id="title">Embodied Skill Replacement Architecture</title>
   <desc id="desc">Left-to-right pipeline: Observation input, heterogeneous Foundation Models, Decision-Compatible Adapter, Unified Skill Representation, SkillChannel gate, Pretrained Brain, and action outputs. A skill-call feedback path returns from Scheduler to SkillChannel.</desc>
 
@@ -179,4 +182,6 @@
   </g>
 
   <text x="590" y="540" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#94A3B8">Reading order: left -&gt; right. Color encodes role group only. Solid = information flow; dashed = control.</text>
+
+  </g>
 </svg>
