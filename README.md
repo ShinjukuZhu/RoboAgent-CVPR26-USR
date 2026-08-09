@@ -161,7 +161,7 @@ All numbers are computed from **per-episode manifests** (never hand-filled).
 <br/>
 
 - **Data**: 35 real EB cases from traces; for each case, **RGB / target / history / OG object.class / context are FIXED**; only USR `found / confidence / uncertainty` vary.
-- **5 signal states × 35 cases = 175 probes**:
+- **5 signal states per case** (175 total probes):
 
   | state | USR | expected policy |
   |-------|-----|-----------------|
