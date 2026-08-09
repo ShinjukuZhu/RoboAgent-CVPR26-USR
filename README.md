@@ -132,6 +132,71 @@ execute / guard / reobserve"]
 | **SkillChannel** | publish/consume gate + contract audit + raw-leak isolation | 12/12 contract tests |
 | **Brain** | consumes USR facts + decision signals | DA-FT 98% counterfactual accuracy |
 
+## Evaluation Protocols
+
+All numbers below are computed from **per-episode manifests** (never hand-filled). Each run has an independent directory with `run_manifest.json` (git commit / model SHA-256 / prompt hash / seed / episode ids) + `episode_manifest.jsonl` (per-episode GCR/SR).
+
+### 1. Exact McNemar (Align vs Naive): p < 0.001, 23 recovered, 0 regression
+
+- **Dataset**: EB-ALFRED base, 50 episodes, seed 42, same Brain (fine-tuned Qwen) / generation config.
+- **Pairing**: for each episode, compare Align-SR vs Naive-SR on the **same episode**.
+- **Discordant pairs** (exact McNemar):
+  - `b` = episodes where Naive fails but Align succeeds = **23**
+  - `c` = episodes where Align fails but Naive succeeds = **0**
+- **Test**: two-sided exact binomial McNemar `p = 2·P(Binomial(b+c, 0.5) ≤ min(b,c))` → `p ≈ 2.4e-7 < 0.001`.
+- `regression` = success→fail when moving Naive→Align = 0; `improvement` = fail→success = 23.
+- **Failure taxonomy**: of the 33 Naive-failed episodes, 22/23 recovered ones show `lpm_error` (OG detection *succeeds* but the label does not match the Brain contract → wrong downstream action), i.e. dominant failure mode = downstream contract mismatch (4 explicitly `contract_mismatch`, 3 `detection_failure`, 26 `lpm_error_unknown`).
+
+### 2. DA-FT decision accuracy: 98% (34/35 signal-sensitive)
+
+- **Data**: 35 real EB cases sampled from traces; for each case, **RGB / target / history / OG object.class / context are FIXED**, only the USR `found / confidence / uncertainty` fields vary.
+- **5 signal states per case** (175 total probes):
+  | state | USR | expected policy |
+  |-------|-----|-----------------|
+  | high-conf | `found=true; confidence=0.90` | execute |
+  | low-conf | `found=true; confidence=0.15` | guard (no-op) |
+  | found=false | `found=false; confidence=0.00` | reobserve |
+  | missing-conf | `found=true` (no conf) | execute |
+  | conflict | `found=false; confidence=0.90` | reobserve |
+- **Brains compared**: Base (40%), raw-FT (40%, outputs same action for all states — 0/35 sensitive), DA-FT (decision-aware trained).
+- **DA-FT metrics**: decision accuracy = 172/175 = **98%**; signal-sensitivity = number of cases (out of 35) where behavior changes across signal states = **34/35**; reobserve F1 = 0.98; risk-coverage = high-conf 35/35 execute, low-conf 0/35 execute.
+- **Per-case log**: `USR → Brain input → raw output → parsed action → expected policy` saved for every probe.
+
+### 3. Skill-aware training ablation: canonical 48 / canonical+signals 61 / flat-USR 58 / shuffled-USR 28
+
+- **Data**: 350 clean-class OG samples × 650 identical supervision rows per variant (350 normal + 150 reobserve + 150 guard). **Same** pool / split / sample count / epochs(4) / batch(6) / lr(2e-4) / optimizer steps / checkpoint init / evaluation set.
+- **Input representation is the ONLY difference**:
+  | variant | input |
+  |---------|-------|
+  | raw | object class only |
+  | canonical | object class only |
+  | canonical+signals | class + `found/confidence` |
+  | flat-USR | class + `found/confidence` (USR-style) |
+  | shuffled-USR | class + **randomized** `found/confidence` (breaks signal→action mapping) |
+- **Metric (unseen-FM)**: action-list exact match on 200 held-out **GDINO** object-grounding test rows (never seen in training).
+- **Counterfactual (5 states)**: only canonical+signals / flat-USR reach 5/5; raw/canonical 2/5.
+- **Interpretation**: shuffled-USR collapse (28%) proves the model learned the *signal→decision* mapping, not USR serialization; the behavioral gain is attributable to explicit decision signals (canonical+signals ≈ flat-USR).
+
+### 4. SkillChannel contract tests: 12/12
+
+- **publish** validates: schema_version / required sections / producer / episode_id / step_id / timestamp.
+- **consume** is restricted to `PUBLIC_FIELDS` whitelist (full dotted paths); any raw field (`det_query`, bbox, caption, model-specific output) is **blocked**.
+- **12 unit tests**:
+  | # | test | behavior |
+  |---|------|----------|
+  | 1 | missing required field | reject |
+  | 2 | wrong type | reject |
+  | 3/3b | confidence <0 or >1 | reject |
+  | 4 | wrong schema version | reject |
+  | 5 | stale message (step < current) | reject |
+  | 6 | **cross-episode** message | reject |
+  | 7 | wrong producer | recorded (audit) |
+  | 8 | **future-step** message (temporal leakage) | reject |
+  | 8b | sequential step | accept |
+  | 9 | unknown field (non-whitelist) | blocked |
+  | 10/10b | raw model-output leakage | detected + isolated |
+- Every call emits a **machine-readable contract audit** record: `producer / consumer / episode_id / step_id / schema_version / fields_consumed / fields_blocked / validation_result`.
+
 ## Core Findings
 
 1. **Contract Mismatch + Decision-Compatible Adapter** is the primary performance contribution: naive 34% → aligned 80% (+46pp). In audited failures, the dominant failure mode was downstream contract mismatch (OG detection succeeds but the label does not match the Brain's expected contract → wrong downstream action).
