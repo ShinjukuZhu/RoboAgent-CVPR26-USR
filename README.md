@@ -89,7 +89,7 @@ When a heterogeneous FM (e.g., Grounding DINO, LLMDet) replaces a skill module (
 The framework turns heterogeneous Foundation Models into **pluggable Embodied Skills** that communicate with the pretrained Brain through a **Unified Skill Representation (USR)** gated by a **SkillChannel**.
 
 <p align="center">
-  <img src="assets/skill-architecture.png" alt="Skill Architecture: Foundation Models to Decision-Aware Adapter to USR to SkillChannel to Pretrained Brain" width="920"/>
+  <img src="assets/skill-architecture.png" alt="Left-to-right Skill Architecture: Input, Foundation Models, Decision-Compatible Adapter, USR v2.0, SkillChannel, Pretrained Brain, Output actions" width="1100"/>
 </p>
 
 <details>
@@ -97,13 +97,15 @@ The framework turns heterogeneous Foundation Models into **pluggable Embodied Sk
 
 <br/>
 
-Flow (same information as the diagram):
+Flow (same information as the diagram; left → right):
 
+0. **Input** — RGB / instruction / history
 1. **Foundation Models (heterogeneous)** — OG: LLMDet / Grounding DINO; SD: Florence-2; EG: Qwen-EG / eg-LoRA (independent skill)
-2. **Skill Logic + Decision-Aware Adapter** — remap v3 (canonicalize / functional override / no-veto / found / fallback); SD parse (object → location/relation); EG parse (`in|on|target <obj>`) + validator
+2. **Decision-Compatible Adapter** — remap v3 (canonicalize / functional override / no-veto / found / fallback); SD parse (object → location/relation); EG parse (`in|on|target <obj>`) + validator
 3. **Unified Skill Representation (USR v2.0)** — `environment_facts` · `task_semantics` · `decision_signals` · `provenance`
 4. **SkillChannel** — `publish(skill, USR)` · `consume(skill, public_field)` [whitelist] · contract audit · temporal isolation · raw model output BLOCKED
-5. **Pretrained Brain (fine-tuned Qwen)** — SkillChannel `consume` → Scheduler and LPM; Scheduler (Think → Query) issues skill calls back into SkillChannel; LPM actions: execute · guard · reobserve
+5. **Pretrained Brain (fine-tuned Qwen)** — SkillChannel `consume` → Scheduler and LPM; Scheduler (Think → Query) issues skill calls back into SkillChannel
+6. **Output** — execute / guard / reobserve
 
 </details>
 
