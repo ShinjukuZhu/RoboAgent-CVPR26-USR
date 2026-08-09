@@ -1,6 +1,28 @@
+<div align="center">
+
 # RoboAgent-CVPR26-USR
 
-**Embodied Skill Replacement: Contract Mismatch → Decision-Compatible Adapter → Unified Skill Representation (USR) → SkillChannel → Decision-Aware Training**
+**Embodied Skill Replacement**
+
+`Contract Mismatch` → `Decision-Compatible Adapter` → `USR` → `SkillChannel` → `Decision-Aware Training`
+
+<br/>
+
+<img src="https://img.shields.io/badge/CVPR-2026-0B3D91?style=for-the-badge" alt="CVPR 2026"/>
+<img src="https://img.shields.io/badge/Status-Frozen_Snapshot-6B7280?style=for-the-badge" alt="Frozen Snapshot"/>
+<img src="https://img.shields.io/badge/Code-Embodied_Skill_Replacement-2563EB?style=for-the-badge" alt="Embodied Skill Replacement"/>
+
+<br/>
+
+<img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.12"/>
+<img src="https://img.shields.io/badge/PyTorch-2.8.0-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch 2.8.0"/>
+<img src="https://img.shields.io/badge/Transformers-4.57.0-FFD21E?style=flat-square&logo=huggingface&logoColor=black" alt="Transformers 4.57.0"/>
+<img src="https://img.shields.io/badge/Brain-Qwen2.5--VL--3B-38B2AC?style=flat-square" alt="Qwen2.5-VL-3B"/>
+<img src="https://img.shields.io/badge/Benchmark-EB--ALFRED-111827?style=flat-square" alt="EB-ALFRED"/>
+
+</div>
+
+<br/>
 
 This repository contains the **frozen experimental code** for our work on replacing specialized Foundation Model (FM) skill modules inside a pretrained embodied agent (RoboAgent, fine-tuned Qwen2.5-VL-3B) while keeping the Brain's contract intact.
 
@@ -8,135 +30,105 @@ This repository contains the **frozen experimental code** for our work on replac
 
 ---
 
+## Contents
+
+- [Problem](#problem)
+- [Main Results](#main-results-eb-alfred-base-50-episodes-seed-42)
+- [Skill Architecture](#skill-architecture)
+- [Evaluation Protocols](#evaluation-protocols)
+- [Research Docs](#research-docs)
+- [Core Findings](#core-findings)
+- [Repository Layout](#repository-layout)
+- [Reproduction Notes](#reproduction-notes)
+- [Frozen Archive](#frozen-archive)
+- [References / Related Work](#references--related-work)
+
+---
+
 ## Problem
 
 When a heterogeneous FM (e.g., Grounding DINO, LLMDet) replaces a skill module (e.g., object grounding) of a pretrained embodied agent:
 
-- the FM's output **does not match the Brain's expected contract** (vocabulary, format, semantics);
-- naive replacement causes **catastrophic degradation**;
-- multiple skills need a **unified, typed, auditable communication channel**;
-- the Brain needs to **consume decision signals** (found / confidence / uncertainty), not just object labels.
+| Challenge | Why it matters |
+|-----------|----------------|
+| Contract mismatch | The FM's output **does not match the Brain's expected contract** (vocabulary, format, semantics) |
+| Naive replacement | Causes **catastrophic degradation** |
+| Multi-skill plumbing | Multiple skills need a **unified, typed, auditable communication channel** |
+| Decision signals | The Brain needs to **consume decision signals** (`found` / `confidence` / `uncertainty`), not just object labels |
+
+---
 
 ## Main Results (EB-ALFRED base, 50 episodes, seed 42)
 
 | Config | Meaning | SR | GCR |
-|--------|---------|-----|-----|
+|--------|---------|:---:|:---:|
 | Native | RoboAgent native | **78%** | 0.78 |
 | Naive | GDINO direct replace, no adapter | **34%** | 0.34 |
 | **Align** | GDINO + Decision-Compatible Adapter | **80%** | 0.80 |
 | Align+USR | Align + USR Channel | 78% | 0.78 |
 | **FullIndep** | OG + independent EG-LoRA + SD + USR | **80%** | 0.80 |
 
-- **Exact McNemar (Align vs Naive): p < 0.001** (23 recovered, 0 regression).
-- **DA-FT decision accuracy: 98%** (34/35 signal-sensitive cases).
-- **Skill-aware ablation**: canonical 48% / canonical+signals 61% / flat-USR 58% / shuffled-USR 28%.
-- **SkillChannel contract tests: 12/12.**
+<details open>
+<summary><strong>Headline metrics</strong></summary>
+
+<br/>
+
+| Metric | Result |
+|--------|--------|
+| Exact McNemar (Align vs Naive) | **p < 0.001** (23 recovered, 0 regression) |
+| DA-FT decision accuracy | **98%** (172/175); signal-sensitive **34/35** |
+| Skill-aware ablation | canonical **48%** / canonical+signals **61%** / flat-USR **58%** / shuffled-USR **28%** |
+| SkillChannel contract tests | **12/12** |
+
+</details>
+
+---
 
 ## Skill Architecture
 
 The framework turns heterogeneous Foundation Models into **pluggable Embodied Skills** that communicate with the pretrained Brain through a **Unified Skill Representation (USR)** gated by a **SkillChannel**.
 
-```mermaid
-flowchart TB
-    subgraph FM["Foundation Models (heterogeneous)"]
-        DET["OG: LLMDet / Grounding DINO"]
-        FLOR["SD: Florence-2"]
-        EGV["EG: Qwen-EG / eg-LoRA"]
-    end
+<p align="center">
+  <img src="assets/skill-architecture.png" alt="Skill Architecture: Foundation Models to Decision-Aware Adapter to USR to SkillChannel to Pretrained Brain" width="920"/>
+</p>
 
-    subgraph LOGIC["Skill Logic + Decision-Aware Adapter"]
-        A1["remap v3 canonicalization
-functional override / no-veto / found / fallback"]
-        A2["SD parse (object → location/relation)"]
-        A3["EG parse (in|on|target <obj>) + validator"]
-    end
+<details>
+<summary><strong>Editable vector source</strong> — <a href="assets/skill-architecture.svg"><code>assets/skill-architecture.svg</code></a></summary>
 
-    subgraph USR["Unified Skill Representation (v2.0)"]
-        F["environment_facts
-(object.class / relation / location)"]
-        T["task_semantics
-(subgoal / role)"]
-        S["decision_signals
-(found / confidence / uncertainty)"]
-        P["provenance
-(detector / alignment_path)"]
-    end
+<br/>
 
-    subgraph CH["SkillChannel"]
-        C1["publish(skill, USR)
-schema + producer + episode_id + step_id"]
-        C2["consume(skill, public_field)
-whitelist only · raw blocked"]
-        C3["contract audit + temporal isolation"]
-    end
+Flow (same information as the diagram):
 
-    subgraph BRAIN["Pretrained Brain (fine-tuned Qwen)"]
-        SCH["Scheduler
-(Think → Query protocol)"]
-        LPM["LPM / action decoder
-execute / guard / reobserve"]
-    end
+1. **Foundation Models (heterogeneous)** — OG: LLMDet / Grounding DINO; SD: Florence-2; EG: Qwen-EG / eg-LoRA (independent skill)
+2. **Skill Logic + Decision-Aware Adapter** — remap v3 (canonicalize / functional override / no-veto / found / fallback); SD parse (object → location/relation); EG parse (`in|on|target <obj>`) + validator
+3. **Unified Skill Representation (USR v2.0)** — `environment_facts` · `task_semantics` · `decision_signals` · `provenance`
+4. **SkillChannel** — `publish(skill, USR)` · `consume(skill, public_field)` [whitelist] · contract audit · temporal isolation · raw model output BLOCKED
+5. **Pretrained Brain (fine-tuned Qwen)** — SkillChannel `consume` → Scheduler and LPM; Scheduler (Think → Query) issues skill calls back into SkillChannel; LPM actions: execute · guard · reobserve
 
-    DET --> A1 --> USR
-    FLOR --> A2 --> USR
-    EGV --> A3 --> USR
-    USR --> C1
-    C2 --> SCH
-    C2 --> LPM
-    SCH -->|skill call| CH
-```
+</details>
 
-**ASCII version** (render-safe):
-
-```
-                        ┌─────────────────────────────────────────────┐
-                        │       Foundation Models (heterogeneous)       │
-                        │  OG: LLMDet / Grounding DINO                 │
-                        │  SD: Florence-2                              │
-                        │  EG: Qwen-EG / eg-LoRA (independent skill)   │
-                        └───────────────┬──────────────┬───────────────┘
-                                        │              │
-                        ┌───────────────▼──────────────▼───────────────┐
-                        │   Skill Logic + Decision-Aware Adapter        │
-                        │  remap v3 (canonicalize / functional /        │
-                        │  no-veto / found / fallback)                  │
-                        └───────────────────────┬───────────────────────┘
-                                                │
-                        ┌───────────────────────▼───────────────────────┐
-                        │   Unified Skill Representation (USR v2.0)     │
-                        │  environment_facts · task_semantics          │
-                        │  decision_signals · provenance               │
-                        └───────────────────────┬───────────────────────┘
-                                                │  publish(skill, USR)
-                        ┌───────────────────────▼───────────────────────┐
-                        │              SkillChannel                     │
-                        │  consume(skill, public_field)  [whitelist]    │
-                        │  contract audit · temporal isolation          │
-                        │  raw model output BLOCKED                     │
-                        └───────────────────────┬───────────────────────┘
-                                                │  consume(USR fields)
-                        ┌───────────────────────▼───────────────────────┐
-                        │       Pretrained Brain (fine-tuned Qwen)      │
-                        │  Scheduler (Think → Query) → LPM / action     │
-                        │  execute · guard · reobserve                  │
-                        └───────────────────────────────────────────────┘
-```
-
-**Role of each layer**
+### Role of each layer
 
 | Layer | Responsibility | Evidence |
-|-------|---------------|----------|
+|-------|----------------|----------|
 | **Foundation Models** | heterogeneous, replaceable skill backends | OG=LLMDet/GDINO, SD=Florence-2, EG=independent |
 | **Skill Logic + Adapter** | convert raw FM output into Brain-compatible contract | naive 34% → aligned 80% |
 | **USR** | typed, temporal, auditable shared representation | 100% OG→USR→SD propagation, no raw bypass |
 | **SkillChannel** | publish/consume gate + contract audit + raw-leak isolation | 12/12 contract tests |
 | **Brain** | consumes USR facts + decision signals | DA-FT 98% counterfactual accuracy |
 
+---
+
 ## Evaluation Protocols
 
-All numbers below are computed from **per-episode manifests** (never hand-filled). Each run has an independent directory with `run_manifest.json` (git commit / model SHA-256 / prompt hash / seed / episode ids) + `episode_manifest.jsonl` (per-episode GCR/SR).
+All numbers below are computed from **per-episode manifests** (never hand-filled). Each run has an independent directory with:
 
-### 1. Exact McNemar (Align vs Naive): p < 0.001, 23 recovered, 0 regression
+- `run_manifest.json` — git commit / model SHA-256 / prompt hash / seed / episode ids
+- `episode_manifest.jsonl` — per-episode GCR/SR
+
+### 1. Exact McNemar (Align vs Naive)
+
+> **p < 0.001** · **23 recovered** · **0 regression**
 
 - **Dataset**: EB-ALFRED base, 50 episodes, seed 42, same Brain (fine-tuned Qwen) / generation config.
 - **Pairing**: for each episode, compare Align-SR vs Naive-SR on the **same episode**.
@@ -147,10 +139,13 @@ All numbers below are computed from **per-episode manifests** (never hand-filled
 - `regression` = success→fail when moving Naive→Align = 0; `improvement` = fail→success = 23.
 - **Failure taxonomy**: of the 33 Naive-failed episodes, 22/23 recovered ones show `lpm_error` (OG detection *succeeds* but the label does not match the Brain contract → wrong downstream action), i.e. dominant failure mode = downstream contract mismatch (4 explicitly `contract_mismatch`, 3 `detection_failure`, 26 `lpm_error_unknown`).
 
-### 2. DA-FT decision accuracy: 98% (34/35 signal-sensitive)
+### 2. DA-FT decision accuracy
+
+> **98%** (172/175) · **34/35** signal-sensitive
 
 - **Data**: 35 real EB cases sampled from traces; for each case, **RGB / target / history / OG object.class / context are FIXED**, only the USR `found / confidence / uncertainty` fields vary.
 - **5 signal states per case** (175 total probes):
+
   | state | USR | expected policy |
   |-------|-----|-----------------|
   | high-conf | `found=true; confidence=0.90` | execute |
@@ -158,14 +153,18 @@ All numbers below are computed from **per-episode manifests** (never hand-filled
   | found=false | `found=false; confidence=0.00` | reobserve |
   | missing-conf | `found=true` (no conf) | execute |
   | conflict | `found=false; confidence=0.90` | reobserve |
+
 - **Brains compared**: Base (40%), raw-FT (40%, outputs same action for all states — 0/35 sensitive), DA-FT (decision-aware trained).
 - **DA-FT metrics**: decision accuracy = 172/175 = **98%**; signal-sensitivity = number of cases (out of 35) where behavior changes across signal states = **34/35**; reobserve F1 = 0.98; risk-coverage = high-conf 35/35 execute, low-conf 0/35 execute.
 - **Per-case log**: `USR → Brain input → raw output → parsed action → expected policy` saved for every probe.
 
-### 3. Skill-aware training ablation: canonical 48 / canonical+signals 61 / flat-USR 58 / shuffled-USR 28
+### 3. Skill-aware training ablation
+
+> canonical **48** / canonical+signals **61** / flat-USR **58** / shuffled-USR **28**
 
 - **Data**: 350 clean-class OG samples × 650 identical supervision rows per variant (350 normal + 150 reobserve + 150 guard). **Same** pool / split / sample count / epochs(4) / batch(6) / lr(2e-4) / optimizer steps / checkpoint init / evaluation set.
 - **Input representation is the ONLY difference**:
+
   | variant | input |
   |---------|-------|
   | raw | object class only |
@@ -173,15 +172,19 @@ All numbers below are computed from **per-episode manifests** (never hand-filled
   | canonical+signals | class + `found/confidence` |
   | flat-USR | class + `found/confidence` (USR-style) |
   | shuffled-USR | class + **randomized** `found/confidence` (breaks signal→action mapping) |
+
 - **Metric (unseen-FM)**: action-list exact match on 200 held-out **GDINO** object-grounding test rows (never seen in training).
 - **Counterfactual (5 states)**: only canonical+signals / flat-USR reach 5/5; raw/canonical 2/5.
 - **Interpretation**: shuffled-USR collapse (28%) proves the model learned the *signal→decision* mapping, not USR serialization; the behavioral gain is attributable to explicit decision signals (canonical+signals ≈ flat-USR).
 
-### 4. SkillChannel contract tests: 12/12
+### 4. SkillChannel contract tests
+
+> **12/12**
 
 - **publish** validates: schema_version / required sections / producer / episode_id / step_id / timestamp.
 - **consume** is restricted to `PUBLIC_FIELDS` whitelist (full dotted paths); any raw field (`det_query`, bbox, caption, model-specific output) is **blocked**.
 - **12 unit tests**:
+
   | # | test | behavior |
   |---|------|----------|
   | 1 | missing required field | reject |
@@ -195,7 +198,10 @@ All numbers below are computed from **per-episode manifests** (never hand-filled
   | 8b | sequential step | accept |
   | 9 | unknown field (non-whitelist) | blocked |
   | 10/10b | raw model-output leakage | detected + isolated |
+
 - Every call emits a **machine-readable contract audit** record: `producer / consumer / episode_id / step_id / schema_version / fields_consumed / fields_blocked / validation_result`.
+
+---
 
 ## Research Docs
 
@@ -209,6 +215,8 @@ Three research surveys requested by our advisor, archived in this repo:
 
 > A combined single-file summary of all three surveys is in [`INVESTIGATION_RESPONSE.md`](INVESTIGATION_RESPONSE.md).
 
+---
+
 ## Core Findings
 
 1. **Contract Mismatch + Decision-Compatible Adapter** is the primary performance contribution: naive 34% → aligned 80% (+46pp). In audited failures, the dominant failure mode was downstream contract mismatch (OG detection succeeds but the label does not match the Brain's expected contract → wrong downstream action).
@@ -217,9 +225,11 @@ Three research surveys requested by our advisor, archived in this repo:
 
 3. **Decision-aware training** enables the Brain to consume decision signals (DA-FT 98% counterfactual accuracy vs raw-FT 40%).
 
+---
+
 ## Repository Layout
 
-```
+```text
 agents/
 ├── agent.py                 # RoboAgent agent: scheduler + 7 skills + USR Channel hooks
 ├── og_remap_only.py         # Decision-Compatible Adapter (remap v3) for OG
@@ -249,19 +259,27 @@ run_aw.py                    # ALFWorld evaluation entry
 eval_config.yaml
 ```
 
+---
+
 ## Reproduction Notes
 
-- **Environment**: AI2-THOR (thor-201909061227) via EmbodiedBench; Python 3.12, torch 2.8.0, transformers 4.57.0, RTX 6000D.
-- **Brain**: fine-tuned Qwen2.5-VL-3B (RoboAgent_CVPR26, frozen).
-- **Data**: EB-ALFRED base (50 ep) / ALFWorld eval_out_of_distribution (134 ep).
-- Checkpoints and model weights are **not** included (large binary files); see `FINAL_MODEL_MANIFEST.json` in the frozen archive for paths and SHA-256.
+| Item | Detail |
+|------|--------|
+| **Environment** | AI2-THOR (`thor-201909061227`) via EmbodiedBench; Python 3.12, torch 2.8.0, transformers 4.57.0, RTX 6000D |
+| **Brain** | fine-tuned Qwen2.5-VL-3B (RoboAgent_CVPR26, frozen) |
+| **Data** | EB-ALFRED base (50 ep) / ALFWorld `eval_out_of_distribution` (134 ep) |
+| **Weights** | Checkpoints and model weights are **not** included (large binary files); see `FINAL_MODEL_MANIFEST.json` in the frozen archive for paths and SHA-256 |
+
+---
 
 ## Frozen Archive
 
 A read-only frozen snapshot of the full project (code + runs + training data + checkpoints + SHA256SUMS) is archived under `frozen_final_closure_<TS>/` on the experiment machine. All final numbers in this README are computed from per-episode manifests.
 
+---
+
 ## References / Related Work
 
-- RoboAgent (CVPR 2026): single fine-tuned Qwen2.5-VL-3B as a unified embodied Brain.
-- Grounding DINO / LLMDet: open-vocabulary object detectors.
-- Florence-2: prompt-based unified vision model.
+- **RoboAgent (CVPR 2026)** — single fine-tuned Qwen2.5-VL-3B as a unified embodied Brain
+- **Grounding DINO / LLMDet** — open-vocabulary object detectors
+- **Florence-2** — prompt-based unified vision model
