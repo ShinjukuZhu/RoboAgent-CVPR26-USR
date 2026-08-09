@@ -32,6 +32,106 @@ When a heterogeneous FM (e.g., Grounding DINO, LLMDet) replaces a skill module (
 - **Skill-aware ablation**: canonical 48% / canonical+signals 61% / flat-USR 58% / shuffled-USR 28%.
 - **SkillChannel contract tests: 12/12.**
 
+## Skill Architecture
+
+The framework turns heterogeneous Foundation Models into **pluggable Embodied Skills** that communicate with the pretrained Brain through a **Unified Skill Representation (USR)** gated by a **SkillChannel**.
+
+```mermaid
+flowchart TB
+    subgraph FM["Foundation Models (heterogeneous)"]
+        DET["OG: LLMDet / Grounding DINO"]
+        FLOR["SD: Florence-2"]
+        EGV["EG: Qwen-EG / eg-LoRA"]
+    end
+
+    subgraph LOGIC["Skill Logic + Decision-Aware Adapter"]
+        A1["remap v3 canonicalization
+functional override / no-veto / found / fallback"]
+        A2["SD parse (object → location/relation)"]
+        A3["EG parse (in|on|target <obj>) + validator"]
+    end
+
+    subgraph USR["Unified Skill Representation (v2.0)"]
+        F["environment_facts
+(object.class / relation / location)"]
+        T["task_semantics
+(subgoal / role)"]
+        S["decision_signals
+(found / confidence / uncertainty)"]
+        P["provenance
+(detector / alignment_path)"]
+    end
+
+    subgraph CH["SkillChannel"]
+        C1["publish(skill, USR)
+schema + producer + episode_id + step_id"]
+        C2["consume(skill, public_field)
+whitelist only · raw blocked"]
+        C3["contract audit + temporal isolation"]
+    end
+
+    subgraph BRAIN["Pretrained Brain (fine-tuned Qwen)"]
+        SCH["Scheduler
+(Think → Query protocol)"]
+        LPM["LPM / action decoder
+execute / guard / reobserve"]
+    end
+
+    DET --> A1 --> USR
+    FLOR --> A2 --> USR
+    EGV --> A3 --> USR
+    USR --> C1
+    C2 --> SCH
+    C2 --> LPM
+    SCH -->|skill call| CH
+```
+
+**ASCII version** (render-safe):
+
+```
+                        ┌─────────────────────────────────────────────┐
+                        │       Foundation Models (heterogeneous)       │
+                        │  OG: LLMDet / Grounding DINO                 │
+                        │  SD: Florence-2                              │
+                        │  EG: Qwen-EG / eg-LoRA (independent skill)   │
+                        └───────────────┬──────────────┬───────────────┘
+                                        │              │
+                        ┌───────────────▼──────────────▼───────────────┐
+                        │   Skill Logic + Decision-Aware Adapter        │
+                        │  remap v3 (canonicalize / functional /        │
+                        │  no-veto / found / fallback)                  │
+                        └───────────────────────┬───────────────────────┘
+                                                │
+                        ┌───────────────────────▼───────────────────────┐
+                        │   Unified Skill Representation (USR v2.0)     │
+                        │  environment_facts · task_semantics          │
+                        │  decision_signals · provenance               │
+                        └───────────────────────┬───────────────────────┘
+                                                │  publish(skill, USR)
+                        ┌───────────────────────▼───────────────────────┐
+                        │              SkillChannel                     │
+                        │  consume(skill, public_field)  [whitelist]    │
+                        │  contract audit · temporal isolation          │
+                        │  raw model output BLOCKED                     │
+                        └───────────────────────┬───────────────────────┘
+                                                │  consume(USR fields)
+                        ┌───────────────────────▼───────────────────────┐
+                        │       Pretrained Brain (fine-tuned Qwen)      │
+                        │  Scheduler (Think → Query) → LPM / action     │
+                        │  execute · guard · reobserve                  │
+                        └───────────────────────────────────────────────┘
+```
+
+**Role of each layer**
+
+| Layer | Responsibility | Evidence |
+|-------|---------------|----------|
+| **Foundation Models** | heterogeneous, replaceable skill backends | OG=LLMDet/GDINO, SD=Florence-2, EG=independent |
+| **Skill Logic + Adapter** | convert raw FM output into Brain-compatible contract | naive 34% → aligned 80% |
+| **USR** | typed, temporal, auditable shared representation | 100% OG→USR→SD propagation, no raw bypass |
+| **SkillChannel** | publish/consume gate + contract audit + raw-leak isolation | 12/12 contract tests |
+| **Brain** | consumes USR facts + decision signals | DA-FT 98% counterfactual accuracy |
+
 ## Core Findings
 
 1. **Contract Mismatch + Decision-Compatible Adapter** is the primary performance contribution: naive 34% → aligned 80% (+46pp). In audited failures, the dominant failure mode was downstream contract mismatch (OG detection succeeds but the label does not match the Brain's expected contract → wrong downstream action).
