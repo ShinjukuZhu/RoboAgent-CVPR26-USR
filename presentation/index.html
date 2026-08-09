@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RoboAgent-CVPR26-USR · Embodied Skill Replacement</title>
+  <style>
+    :root {
+      --navy: #0B1F33;
+      --navy-2: #123047;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --paper: #F7FAFC;
+      --white: #FFFFFF;
+      --teal: #0D9488;
+      --teal-soft: #CCFBF1;
+      --amber: #C2410C;
+      --amber-soft: #FFEDD5;
+      --blue: #1D4ED8;
+      --blue-soft: #DBEAFE;
+      --danger: #B91C1C;
+      --ok: #047857;
+      --shadow: 0 18px 50px rgba(11, 31, 51, 0.12);
+      --radius: 18px;
+      --font: "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #D1FAE5 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #DBEAFE 0%, transparent 50%),
+        var(--paper);
+      line-height: 1.55;
+    }
+
+    /* progress */
+    .progress {
+      position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+      z-index: 100; transition: width .15s linear;
+    }
+
+    /* top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 90;
+      backdrop-filter: blur(14px);
+      background: rgba(247, 250, 252, 0.82);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    }
+    .topbar-inner {
+      max-width: 1120px; margin: 0 auto; padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--navy);
+      text-decoration: none; white-space: nowrap;
+    }
+    .brand-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--teal); box-shadow: 0 0 0 4px rgba(13,148,136,.18);
+    }
+    .nav {
+      display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;
+    }
+    .nav a {
+      text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600;
+      padding: 7px 10px; border-radius: 999px; transition: .2s ease;
+    }
+    .nav a:hover, .nav a.active {
+      color: var(--navy); background: rgba(13,148,136,.10);
+    }
+    .hint {
+      font-size: 12px; color: var(--muted); white-space: nowrap;
+    }
+
+    main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
+
+    /* slides as sections */
+    section.slide {
+      margin: 28px 0 56px;
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    section.slide.in {
+      opacity: 1; transform: none;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      padding: 56px 48px;
+      color: white;
+      background:
+        linear-gradient(135deg, rgba(13,148,136,.18), transparent 40%),
+        linear-gradient(160deg, #0B1F33 0%, #123047 55%, #0F766E 140%);
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute; inset: auto -20% -40% 40%;
+      height: 280px;
+      background: radial-gradient(circle, rgba(45,212,191,.35), transparent 60%);
+      pointer-events: none;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+      color: #99F6E4; font-weight: 700; margin-bottom: 14px;
+    }
+    .hero h1 {
+      margin: 0 0 12px; font-size: clamp(28px, 5vw, 46px); line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .hero .sub {
+      max-width: 720px; font-size: 17px; color: #CBD5E1; margin: 0 0 28px;
+    }
+    .pipeline {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .chip {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      color: #E2E8F0; padding: 8px 12px; border-radius: 999px;
+      font-size: 13px; font-weight: 600;
+      animation: pop .6s ease both;
+    }
+    .chip:nth-child(1){animation-delay:.05s}
+    .chip:nth-child(3){animation-delay:.12s}
+    .chip:nth-child(5){animation-delay:.19s}
+    .chip:nth-child(7){animation-delay:.26s}
+    .chip:nth-child(9){animation-delay:.33s}
+    .arrow { color: #5EEAD4; font-weight: 700; }
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(8px) scale(.96); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px;
+    }
+    .pill {
+      font-size: 12px; font-weight: 700; color: #ECFEFF;
+      background: rgba(15,23,42,.35); border: 1px solid rgba(255,255,255,.12);
+      padding: 6px 10px; border-radius: 999px;
+    }
+
+    h2 {
+      margin: 0 0 8px; font-size: 28px; letter-spacing: -0.02em; color: var(--navy);
+    }
+    .lead { color: var(--muted); margin: 0 0 22px; max-width: 720px; }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+      padding: 22px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .hero { padding: 36px 24px; }
+      .hint { display: none; }
+    }
+
+    .problem-item {
+      display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: start;
+      padding: 14px 0; border-bottom: 1px solid var(--line);
+    }
+    .problem-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .num {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: grid; place-items: center; font-weight: 800; color: white;
+      background: var(--navy);
+    }
+    .problem-item h3 { margin: 2px 0 4px; font-size: 16px; }
+    .problem-item p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    .stat {
+      padding: 18px; border-radius: 16px; background: linear-gradient(180deg, #fff, #F8FAFC);
+      border: 1px solid var(--line); text-align: center;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .stat .v {
+      font-size: 34px; font-weight: 800; letter-spacing: -0.03em; color: var(--navy);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat .v.up { color: var(--ok); }
+    .stat .v.down { color: var(--danger); }
+    .stat .l { margin-top: 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
+
+    table.clean {
+      width: 100%; border-collapse: collapse; font-size: 14px;
+    }
+    table.clean th, table.clean td {
+      padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left;
+    }
+    table.clean th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    table.clean tr.hl td { background: #ECFDF5; font-weight: 700; }
+    table.clean tr.bad td { background: #FEF2F2; }
+    .bar-wrap { height: 10px; background: #E2E8F0; border-radius: 999px; overflow: hidden; min-width: 90px; }
+    .bar {
+      height: 100%; width: 0; border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), #34D399);
+      transition: width 1.1s cubic-bezier(.2,.8,.2,1);
+    }
+    .bar.bad { background: linear-gradient(90deg, #DC2626, #F87171); }
+
+    .arch-wrap {
+      overflow: auto; border-radius: 18px; border: 1px solid var(--line); background: white;
+      box-shadow: var(--shadow);
+    }
+    .arch-wrap img {
+      display: block; width: 100%; height: auto;
+      transform: scale(.98); opacity: 0;
+      transition: transform .8s ease, opacity .8s ease;
+    }
+    .arch-wrap.in img { transform: none; opacity: 1; }
+
+    .stages {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 16px;
+    }
+    @media (max-width: 900px) { .stages { grid-template-columns: 1fr 1fr; } }
+    .stage {
+      border-radius: 14px; padding: 14px; border: 1px solid var(--line); background: white;
+      cursor: pointer; transition: .2s ease; min-height: 118px;
+    }
+    .stage:hover, .stage.active {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      border-color: #99F6E4;
+    }
+    .stage .k { font-size: 11px; font-weight: 800; color: var(--teal); letter-spacing: .06em; }
+    .stage h4 { margin: 6px 0 6px; font-size: 14px; }
+    .stage p { margin: 0; font-size: 12px; color: var(--muted); }
+
+    .detail {
+      margin-top: 14px; padding: 16px 18px; border-radius: 14px;
+      background: #F0FDFA; border: 1px solid #99F6E4;
+      display: none;
+    }
+    .detail.show { display: block; animation: fade .25s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
+    .detail code, code {
+      font-family: var(--mono); font-size: 12.5px;
+      background: #EEF2FF; color: #1E3A8A; padding: 1px 6px; border-radius: 6px;
+    }
+
+    .code-map .row {
+      display: grid; grid-template-columns: 180px 1fr 1.2fr; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start;
+    }
+    @media (max-width: 900px) {
+      .code-map .row { grid-template-columns: 1fr; }
+    }
+    .code-map .row:last-child { border-bottom: 0; }
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .04em;
+      padding: 4px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue);
+    }
+    .path {
+      font-family: var(--mono); font-size: 12.5px; color: #0F766E; font-weight: 600;
+      word-break: break-all;
+    }
+    .path a { color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(13,148,136,.4); }
+    .path a:hover { border-bottom-style: solid; }
+
+    .findings li {
+      margin: 0 0 12px; padding: 14px 16px; border-radius: 14px;
+      background: white; border: 1px solid var(--line); list-style: none;
+    }
+    .findings { padding: 0; margin: 0; }
+    .findings strong { color: var(--navy); }
+
+    .footer-note {
+      margin-top: 40px; text-align: center; color: var(--muted); font-size: 13px;
+    }
+
+    .kbd {
+      font-family: var(--mono); font-size: 11px; border: 1px solid #CBD5E1;
+      border-bottom-width: 2px; border-radius: 6px; padding: 2px 6px; background: white;
+    }
+
+    /* floating help */
+    .fab {
+      position: fixed; right: 18px; bottom: 18px; z-index: 95;
+      background: var(--navy); color: white; border: 0; border-radius: 999px;
+      padding: 12px 16px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow);
+    }
+    .fab:hover { background: #123047; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+      background: rgba(15,23,42,.92); color: white; padding: 10px 14px; border-radius: 999px;
+      font-size: 13px; opacity: 0; pointer-events: none; transition: .25s ease; z-index: 120;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top"><span class="brand-dot"></span> RoboAgent · USR</a>
+      <nav class="nav" id="nav">
+        <a href="#problem">问题</a>
+        <a href="#results">结果</a>
+        <a href="#architecture">架构</a>
+        <a href="#pipeline">流水线</a>
+        <a href="#code">代码地图</a>
+        <a href="#findings">结论</a>
+      </nav>
+      <div class="hint"><span class="kbd">↑</span>/<span class="kbd">↓</span> 或 <span class="kbd">J</span>/<span class="kbd">K</span> 切换</div>
+    </div>
+  </div>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="slide hero" data-slide>
+      <div class="eyebrow">CVPR 2026 · Frozen Experimental Snapshot</div>
+      <h1>Embodied Skill Replacement</h1>
+      <p class="sub">
+        把异构 Foundation Model 技能模块接入预训练具身 Brain（RoboAgent / Qwen2.5-VL-3B），
+        在不破坏 Brain 契约的前提下，解决合同失配、统一表征与决策信号消费。
+      </p>
+      <div class="pipeline">
+        <span class="chip">Contract Mismatch</span><span class="arrow">→</span>
+        <span class="chip">Decision-Compatible Adapter</span><span class="arrow">→</span>
+        <span class="chip">USR</span><span class="arrow">→</span>
+        <span class="chip">SkillChannel</span><span class="arrow">→</span>
+        <span class="chip">Decision-Aware Training</span>
+      </div>
+      <div class="meta-row">
+        <span class="pill">EB-ALFRED · 50 ep · seed 42</span>
+        <span class="pill">Brain: Qwen2.5-VL-3B</span>
+        <span class="pill">Frozen @ c1663fe4</span>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="slide" id="problem" data-slide>
+      <h2>问题：直接替换技能为什么会崩？</h2>
+      <p class="lead">异构 FM（如 Grounding DINO / LLMDet）替换 object grounding 等技能时，输出并不等于 Brain 期待的契约。</p>
+      <div class="card">
+        <div class="problem-item">
+          <div class="num">1</div>
+          <div>
+            <h3>Contract mismatch</h3>
+            <p>词汇 / 格式 / 语义与 Brain 期望不一致。</p>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="num">2</div>
+          <div>
+            <h3>Naive replacement</h3>
+            <p>直接替换会导致灾难性退化（Naive SR <strong>34%</strong>）。</p>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="num">3</div>
+          <div>
+            <h3>Multi-skill plumbing</h3>
+            <p>多技能需要统一、可类型检查、可审计的通信通道。</p>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="num">4</div>
+          <div>
+            <h3>Decision signals</h3>
+            <p>Brain 需要消费 <code>found / confidence / uncertainty</code>，而不只是 object label。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="slide" id="results" data-slide>
+      <h2>主结果：一屏看懂贡献</h2>
+      <p class="lead">同一 Brain、同一 seed（42）、EB-ALFRED base 50 episodes。数字全部来自 per-episode manifests。</p>
+
+      <div class="grid-4" style="margin-bottom:18px">
+        <div class="stat"><div class="v down" data-count="34">0</div><div class="l">Naive SR</div></div>
+        <div class="stat"><div class="v up" data-count="80">0</div><div class="l">Align SR</div></div>
+        <div class="stat"><div class="v" data-count="98">0</div><div class="l">DA-FT Acc %</div></div>
+        <div class="stat"><div class="v" data-count="12">0</div><div class="l">Contract Tests</div></div>
+      </div>
+
+      <div class="card">
+        <table class="clean">
+          <thead>
+            <tr><th>Config</th><th>Meaning</th><th>SR</th><th>Visual</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Native</td><td>RoboAgent native</td><td><strong>78%</strong></td>
+              <td><div class="bar-wrap"><div class="bar" data-w="78"></div></div></td>
+            </tr>
+            <tr class="bad">
+              <td>Naive</td><td>GDINO 直接替换，无 adapter</td><td><strong>34%</strong></td>
+              <td><div class="bar-wrap"><div class="bar bad" data-w="34"></div></div></td>
+            </tr>
+            <tr class="hl">
+              <td>Align</td><td>GDINO + Decision-Compatible Adapter</td><td><strong>80%</strong></td>
+              <td><div class="bar-wrap"><div class="bar" data-w="80"></div></div></td>
+            </tr>
+            <tr>
+              <td>Align+USR</td><td>Align + USR Channel</td><td>78%</td>
+              <td><div class="bar-wrap"><div class="bar" data-w="78"></div></div></td>
+            </tr>
+            <tr class="hl">
+              <td>FullIndep</td><td>OG + independent EG-LoRA + SD + USR</td><td><strong>80%</strong></td>
+              <td><div class="bar-wrap"><div class="bar" data-w="80"></div></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin:14px 0 0;color:var(--muted);font-size:13px">
+          Exact McNemar (Align vs Naive): <strong>p &lt; 0.001</strong> · <strong>23 recovered</strong> · <strong>0 regression</strong>
+          &nbsp;·&nbsp; Ablation: canonical 48% / +signals 61% / flat-USR 58% / shuffled 28%
+        </p>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section class="slide" id="architecture" data-slide>
+      <h2>Skill Architecture</h2>
+      <p class="lead">从左到右读：输入 → 异构 FM → Adapter → USR → SkillChannel → Brain → 动作。颜色只表示角色分组。</p>
+      <div class="arch-wrap" id="arch">
+        <img src="./skill-architecture.png" alt="Skill Architecture pipeline diagram" />
+      </div>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:10px">
+        实线 = 数据 / USR 流 · 虚线 = 控制（skill call）
+      </p>
+    </section>
+
+    <!-- PIPELINE INTERACTIVE -->
+    <section class="slide" id="pipeline" data-slide>
+      <h2>五层流水线：点一下看实现</h2>
+      <p class="lead">汇报时按 1→5 讲清楚“谁产生什么、谁消费什么、契约如何守住”。</p>
+      <div class="stages" id="stages">
+        <div class="stage active" data-stage="1">
+          <div class="k">STAGE 1</div>
+          <h4>Foundation Models</h4>
+          <p>OG / SD / EG 可替换后端</p>
+        </div>
+        <div class="stage" data-stage="2">
+          <div class="k">STAGE 2</div>
+          <h4>Adapter</h4>
+          <p>remap v3 合同对齐</p>
+        </div>
+        <div class="stage" data-stage="3">
+          <div class="k">STAGE 3</div>
+          <h4>USR v2.0</h4>
+          <p>统一结构化表征</p>
+        </div>
+        <div class="stage" data-stage="4">
+          <div class="k">STAGE 4</div>
+          <h4>SkillChannel</h4>
+          <p>发布 / 消费 / 审计门</p>
+        </div>
+        <div class="stage" data-stage="5">
+          <div class="k">STAGE 5</div>
+          <h4>Pretrained Brain</h4>
+          <p>Scheduler + LPM</p>
+        </div>
+      </div>
+      <div class="detail show" id="stageDetail"></div>
+    </section>
+
+    <!-- CODE MAP -->
+    <section class="slide" id="code" data-slide>
+      <h2>代码地图：讲到哪打开哪</h2>
+      <p class="lead">下面是汇报顺序对应的仓库路径。链接指向 GitHub 上的源文件。</p>
+      <div class="card code-map">
+        <div class="row">
+          <div><span class="tag">Brain</span></div>
+          <div class="path"><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/agent.py" target="_blank" rel="noopener">agents/agent.py</a><br/><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/prompt_ebalf.py" target="_blank" rel="noopener">agents/prompt_ebalf.py</a></div>
+          <div>Think→Query 调度；技能进 <code>ability_buffer</code>；LPM=<code>manipulation_planner</code>。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">Naive 失败</span></div>
+          <div class="path"><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/naive_detector.py" target="_blank" rel="noopener">agents/naive_detector.py</a></div>
+          <div>原始检测标签直通 Brain，对应 Naive <strong>34%</strong> 的合同失配故事。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">Adapter</span></div>
+          <div class="path">
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/og_remap_only.py" target="_blank" rel="noopener">agents/og_remap_only.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/contract_adapter.py" target="_blank" rel="noopener">agents/contract_adapter.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/skill_alignment.py" target="_blank" rel="noopener">agents/skill_alignment.py</a>
+          </div>
+          <div>remap v3：canonicalize / functional override / no-veto / found / fallback → Align <strong>80%</strong>。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">Detectors</span></div>
+          <div class="path">
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/detector_registry.py" target="_blank" rel="noopener">agents/detector_registry.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/llmdet_qwen_og.py" target="_blank" rel="noopener">agents/llmdet_qwen_og.py</a>
+          </div>
+          <div><code>ROBOAGENT_DETECTOR=llmdet|gdino</code> 统一检测入口。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">USR</span></div>
+          <div class="path">
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr.py" target="_blank" rel="noopener">agents/usr.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr_og_backend.py" target="_blank" rel="noopener">agents/usr_og_backend.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr_sd_eg.py" target="_blank" rel="noopener">agents/usr_sd_eg.py</a>
+          </div>
+          <div>USR v2.0 四段：facts / semantics / decision_signals / provenance。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">Channel</span></div>
+          <div class="path"><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr_channel.py" target="_blank" rel="noopener">agents/usr_channel.py</a></div>
+          <div><code>publish</code> / <code>consume</code> whitelist · raw blocked · contract audit（12/12）。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">SD / EG</span></div>
+          <div class="path">
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/florence2_sd.py" target="_blank" rel="noopener">agents/florence2_sd.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/eg_lora_backend.py" target="_blank" rel="noopener">agents/eg_lora_backend.py</a>
+          </div>
+          <div>Florence-2 SD；独立 EG-LoRA（FullIndep 配置）。</div>
+        </div>
+        <div class="row">
+          <div><span class="tag">Eval</span></div>
+          <div class="path">
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/run_ebalf.py" target="_blank" rel="noopener">run_ebalf.py</a><br/>
+            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/run_manifest.py" target="_blank" rel="noopener">agents/run_manifest.py</a>
+          </div>
+          <div>评测入口 + 不可篡改的 run/episode manifests（数字审计来源）。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINDINGS -->
+    <section class="slide" id="findings" data-slide>
+      <h2>三条核心结论</h2>
+      <p class="lead">汇报收尾用这三条就够；细节回到 Evaluation Protocols。</p>
+      <ol class="findings">
+        <li><strong>1. Adapter 是主贡献</strong>：naive 34% → aligned 80%（+46pp）。主要失败是下游合同失配，而不是“检测不到”。</li>
+        <li><strong>2. USR 的价值在决策信号</strong>：canonical+signals 61% ≈ flat-USR 58%；shuffled-USR 崩到 28%，说明学到的是 signal→decision。</li>
+        <li><strong>3. Decision-aware training 让 Brain 会用信号</strong>：DA-FT 98%（172/175）vs raw-FT 40%；signal-sensitive 34/35。</li>
+      </ol>
+      <div class="card" style="margin-top:16px">
+        <strong>一句话收束</strong>
+        <p style="margin:8px 0 0;color:var(--muted)">
+          异构技能可以替换，但必须先对齐契约（Adapter），再用统一表征与通道（USR + SkillChannel）把决策信号安全交给 Brain。
+        </p>
+      </div>
+    </section>
+
+    <p class="footer-note">
+      RoboAgent-CVPR26-USR · frozen experimental code ·
+      <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </main>
+
+  <button class="fab" id="helpBtn" type="button">快捷键</button>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const GH = "https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/";
+    const stageCopy = {
+      1: {
+        title: "Stage 1 · Foundation Models",
+        body: "异构可替换技能后端：OG（LLMDet / Grounding DINO）、SD（Florence-2）、EG（Qwen-EG / eg-LoRA）。",
+        code: "agents/detector_registry.py · agents/florence2_sd.py · agents/eg_lora_backend.py · agents/naive_detector.py"
+      },
+      2: {
+        title: "Stage 2 · Decision-Compatible Adapter",
+        body: "remap v3 把原始检测结果变成 Brain 可消费标签：canonicalize、functional override、no-veto、found、fallback。这是 34%→80% 的主杠杆。",
+        code: "agents/og_remap_only.py · agents/contract_adapter.py · agents/skill_alignment.py"
+      },
+      3: {
+        title: "Stage 3 · Unified Skill Representation (USR v2.0)",
+        body: "四段结构：environment_facts / task_semantics / decision_signals / provenance。OG→USR 与 remap v3 决策等价。",
+        code: "agents/usr.py · agents/usr_og_backend.py · agents/usr_sd_eg.py · agents/usr_reliability.py"
+      },
+      4: {
+        title: "Stage 4 · SkillChannel",
+        body: "publish(skill, USR) 做 schema 校验；consume 只允许 PUBLIC_FIELDS；raw 字段阻断；写出可审计记录（12/12）。",
+        code: "agents/usr_channel.py"
+      },
+      5: {
+        title: "Stage 5 · Pretrained Brain",
+        body: "冻结的 fine-tuned Qwen：Scheduler（Think→Query）发起 skill call；LPM 输出 execute / guard / reobserve。",
+        code: "agents/agent.py · agents/prompt_ebalf.py · agents/qwen.py"
+      }
+    };
+
+    const detail = document.getElementById("stageDetail");
+    function renderStage(id) {
+      const s = stageCopy[id];
+      detail.innerHTML = `<strong>${s.title}</strong>
+        <p style="margin:8px 0 10px">${s.body}</p>
+        <div class="path">打开：${s.code.split(" · ").map(p => `<a href="${GH}${p}" target="_blank" rel="noopener">${p}</a>`).join(" · ")}</div>`;
+      detail.classList.add("show");
+      document.querySelectorAll(".stage").forEach(el => el.classList.toggle("active", el.dataset.stage === String(id)));
+    }
+    document.getElementById("stages").addEventListener("click", (e) => {
+      const st = e.target.closest(".stage");
+      if (!st) return;
+      renderStage(st.dataset.stage);
+    });
+    renderStage(1);
+
+    // reveal on scroll
+    const slides = [...document.querySelectorAll("[data-slide]")];
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (en.isIntersecting) {
+          en.target.classList.add("in");
+          if (en.target.id === "architecture" || en.target.querySelector?.("#arch")) {
+            document.getElementById("arch")?.classList.add("in");
+          }
+          if (en.target.id === "results") animateResults();
+        }
+      });
+    }, { threshold: 0.18 });
+    slides.forEach(s => io.observe(s));
+    const arch = document.getElementById("arch");
+    if (arch) io.observe(arch);
+
+    // active nav
+    const navLinks = [...document.querySelectorAll(".nav a")];
+    const navIo = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const id = en.target.id;
+        navLinks.forEach(a => a.classList.toggle("active", a.getAttribute("href") === `#${id}`));
+      });
+    }, { rootMargin: "-40% 0px -50% 0px", threshold: 0.01 });
+    ["problem","results","architecture","pipeline","code","findings"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) navIo.observe(el);
+    });
+
+    // progress
+    const progress = document.getElementById("progress");
+    window.addEventListener("scroll", () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      progress.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
+    }, { passive: true });
+
+    // counters + bars
+    let resultsDone = false;
+    function animateResults() {
+      if (resultsDone) return;
+      resultsDone = true;
+      document.querySelectorAll("[data-count]").forEach(el => {
+        const target = Number(el.dataset.count);
+        const t0 = performance.now();
+        const dur = 900;
+        const tick = (t) => {
+          const p = Math.min(1, (t - t0) / dur);
+          const eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = Math.round(target * eased) + (target >= 12 && target !== 12 ? "" : "") ;
+          if (target === 12) el.textContent = Math.round(target * eased) + "/12";
+          else if (el.classList.contains("up") || el.classList.contains("down") || target >= 30) el.textContent = Math.round(target * eased) + "%";
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      document.querySelectorAll(".bar").forEach(b => { b.style.width = b.dataset.w + "%"; });
+    }
+
+    // keyboard navigation between sections
+    function currentIndex() {
+      const y = window.scrollY + window.innerHeight * 0.25;
+      let idx = 0;
+      slides.forEach((s, i) => { if (s.offsetTop <= y) idx = i; });
+      return idx;
+    }
+    function go(delta) {
+      const i = Math.max(0, Math.min(slides.length - 1, currentIndex() + delta));
+      slides[i].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    window.addEventListener("keydown", (e) => {
+      if (["INPUT","TEXTAREA"].includes(document.activeElement.tagName)) return;
+      if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === "j" || e.key === "J") { e.preventDefault(); go(1); }
+      if (e.key === "ArrowUp" || e.key === "PageUp" || e.key === "k" || e.key === "K") { e.preventDefault(); go(-1); }
+      if (e.key === "Home") { e.preventDefault(); slides[0].scrollIntoView({ behavior: "smooth" }); }
+      if (e.key === "End") { e.preventDefault(); slides[slides.length-1].scrollIntoView({ behavior: "smooth" }); }
+      if (e.key >= "1" && e.key <= "5" && document.getElementById("pipeline")) {
+        renderStage(e.key);
+        document.getElementById("pipeline").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+
+    const toast = document.getElementById("toast");
+    document.getElementById("helpBtn").addEventListener("click", () => {
+      toast.textContent = "↑↓ / J K 切换段落 · 1-5 切换流水线层 · 点击 Stage 卡片看代码";
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2600);
+    });
+  </script>
+</body>
+</html>
