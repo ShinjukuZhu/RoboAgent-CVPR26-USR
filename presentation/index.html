@@ -1,711 +1,341 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-themes="tokyo-night,dracula,nord,blueprint,academic-paper,corporate-clean">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RoboAgent-CVPR26-USR · Embodied Skill Replacement</title>
-  <style>
-    :root {
-      --navy: #0B1F33;
-      --navy-2: #123047;
-      --ink: #0F172A;
-      --muted: #64748B;
-      --line: #E2E8F0;
-      --paper: #F7FAFC;
-      --white: #FFFFFF;
-      --teal: #0D9488;
-      --teal-soft: #CCFBF1;
-      --amber: #C2410C;
-      --amber-soft: #FFEDD5;
-      --blue: #1D4ED8;
-      --blue-soft: #DBEAFE;
-      --danger: #B91C1C;
-      --ok: #047857;
-      --shadow: 0 18px 50px rgba(11, 31, 51, 0.12);
-      --radius: 18px;
-      --font: "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      font-family: var(--font);
-      color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 10% -10%, #D1FAE5 0%, transparent 55%),
-        radial-gradient(900px 500px at 100% 0%, #DBEAFE 0%, transparent 50%),
-        var(--paper);
-      line-height: 1.55;
-    }
-
-    /* progress */
-    .progress {
-      position: fixed; top: 0; left: 0; height: 3px; width: 0%;
-      background: linear-gradient(90deg, var(--teal), var(--blue));
-      z-index: 100; transition: width .15s linear;
-    }
-
-    /* top bar */
-    .topbar {
-      position: sticky; top: 0; z-index: 90;
-      backdrop-filter: blur(14px);
-      background: rgba(247, 250, 252, 0.82);
-      border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-    }
-    .topbar-inner {
-      max-width: 1120px; margin: 0 auto; padding: 12px 20px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    }
-    .brand {
-      display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--navy);
-      text-decoration: none; white-space: nowrap;
-    }
-    .brand-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--teal); box-shadow: 0 0 0 4px rgba(13,148,136,.18);
-    }
-    .nav {
-      display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;
-    }
-    .nav a {
-      text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600;
-      padding: 7px 10px; border-radius: 999px; transition: .2s ease;
-    }
-    .nav a:hover, .nav a.active {
-      color: var(--navy); background: rgba(13,148,136,.10);
-    }
-    .hint {
-      font-size: 12px; color: var(--muted); white-space: nowrap;
-    }
-
-    main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
-
-    /* slides as sections */
-    section.slide {
-      margin: 28px 0 56px;
-      opacity: 0; transform: translateY(28px);
-      transition: opacity .65s ease, transform .65s ease;
-    }
-    section.slide.in {
-      opacity: 1; transform: none;
-    }
-
-    .hero {
-      position: relative;
-      overflow: hidden;
-      border-radius: 28px;
-      padding: 56px 48px;
-      color: white;
-      background:
-        linear-gradient(135deg, rgba(13,148,136,.18), transparent 40%),
-        linear-gradient(160deg, #0B1F33 0%, #123047 55%, #0F766E 140%);
-      box-shadow: var(--shadow);
-    }
-    .hero::after {
-      content: "";
-      position: absolute; inset: auto -20% -40% 40%;
-      height: 280px;
-      background: radial-gradient(circle, rgba(45,212,191,.35), transparent 60%);
-      pointer-events: none;
-    }
-    .eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-      color: #99F6E4; font-weight: 700; margin-bottom: 14px;
-    }
-    .hero h1 {
-      margin: 0 0 12px; font-size: clamp(28px, 5vw, 46px); line-height: 1.15;
-      letter-spacing: -0.02em;
-    }
-    .hero .sub {
-      max-width: 720px; font-size: 17px; color: #CBD5E1; margin: 0 0 28px;
-    }
-    .pipeline {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-    }
-    .chip {
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.14);
-      color: #E2E8F0; padding: 8px 12px; border-radius: 999px;
-      font-size: 13px; font-weight: 600;
-      animation: pop .6s ease both;
-    }
-    .chip:nth-child(1){animation-delay:.05s}
-    .chip:nth-child(3){animation-delay:.12s}
-    .chip:nth-child(5){animation-delay:.19s}
-    .chip:nth-child(7){animation-delay:.26s}
-    .chip:nth-child(9){animation-delay:.33s}
-    .arrow { color: #5EEAD4; font-weight: 700; }
-    @keyframes pop {
-      from { opacity: 0; transform: translateY(8px) scale(.96); }
-      to { opacity: 1; transform: none; }
-    }
-
-    .meta-row {
-      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px;
-    }
-    .pill {
-      font-size: 12px; font-weight: 700; color: #ECFEFF;
-      background: rgba(15,23,42,.35); border: 1px solid rgba(255,255,255,.12);
-      padding: 6px 10px; border-radius: 999px;
-    }
-
-    h2 {
-      margin: 0 0 8px; font-size: 28px; letter-spacing: -0.02em; color: var(--navy);
-    }
-    .lead { color: var(--muted); margin: 0 0 22px; max-width: 720px; }
-
-    .card {
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
-      padding: 22px;
-    }
-
-    .grid-2 { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-    @media (max-width: 900px) {
-      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-      .hero { padding: 36px 24px; }
-      .hint { display: none; }
-    }
-
-    .problem-item {
-      display: grid; grid-template-columns: 42px 1fr; gap: 12px; align-items: start;
-      padding: 14px 0; border-bottom: 1px solid var(--line);
-    }
-    .problem-item:last-child { border-bottom: 0; padding-bottom: 0; }
-    .num {
-      width: 42px; height: 42px; border-radius: 12px;
-      display: grid; place-items: center; font-weight: 800; color: white;
-      background: var(--navy);
-    }
-    .problem-item h3 { margin: 2px 0 4px; font-size: 16px; }
-    .problem-item p { margin: 0; color: var(--muted); font-size: 14px; }
-
-    .stat {
-      padding: 18px; border-radius: 16px; background: linear-gradient(180deg, #fff, #F8FAFC);
-      border: 1px solid var(--line); text-align: center;
-      transition: transform .25s ease, box-shadow .25s ease;
-    }
-    .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-    .stat .v {
-      font-size: 34px; font-weight: 800; letter-spacing: -0.03em; color: var(--navy);
-      font-variant-numeric: tabular-nums;
-    }
-    .stat .v.up { color: var(--ok); }
-    .stat .v.down { color: var(--danger); }
-    .stat .l { margin-top: 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
-
-    table.clean {
-      width: 100%; border-collapse: collapse; font-size: 14px;
-    }
-    table.clean th, table.clean td {
-      padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left;
-    }
-    table.clean th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-    table.clean tr.hl td { background: #ECFDF5; font-weight: 700; }
-    table.clean tr.bad td { background: #FEF2F2; }
-    .bar-wrap { height: 10px; background: #E2E8F0; border-radius: 999px; overflow: hidden; min-width: 90px; }
-    .bar {
-      height: 100%; width: 0; border-radius: inherit;
-      background: linear-gradient(90deg, var(--teal), #34D399);
-      transition: width 1.1s cubic-bezier(.2,.8,.2,1);
-    }
-    .bar.bad { background: linear-gradient(90deg, #DC2626, #F87171); }
-
-    .arch-wrap {
-      overflow: auto; border-radius: 18px; border: 1px solid var(--line); background: white;
-      box-shadow: var(--shadow);
-    }
-    .arch-wrap img {
-      display: block; width: 100%; height: auto;
-      transform: scale(.98); opacity: 0;
-      transition: transform .8s ease, opacity .8s ease;
-    }
-    .arch-wrap.in img { transform: none; opacity: 1; }
-
-    .stages {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 16px;
-    }
-    @media (max-width: 900px) { .stages { grid-template-columns: 1fr 1fr; } }
-    .stage {
-      border-radius: 14px; padding: 14px; border: 1px solid var(--line); background: white;
-      cursor: pointer; transition: .2s ease; min-height: 118px;
-    }
-    .stage:hover, .stage.active {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-      border-color: #99F6E4;
-    }
-    .stage .k { font-size: 11px; font-weight: 800; color: var(--teal); letter-spacing: .06em; }
-    .stage h4 { margin: 6px 0 6px; font-size: 14px; }
-    .stage p { margin: 0; font-size: 12px; color: var(--muted); }
-
-    .detail {
-      margin-top: 14px; padding: 16px 18px; border-radius: 14px;
-      background: #F0FDFA; border: 1px solid #99F6E4;
-      display: none;
-    }
-    .detail.show { display: block; animation: fade .25s ease; }
-    @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
-    .detail code, code {
-      font-family: var(--mono); font-size: 12.5px;
-      background: #EEF2FF; color: #1E3A8A; padding: 1px 6px; border-radius: 6px;
-    }
-
-    .code-map .row {
-      display: grid; grid-template-columns: 180px 1fr 1.2fr; gap: 12px;
-      padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start;
-    }
-    @media (max-width: 900px) {
-      .code-map .row { grid-template-columns: 1fr; }
-    }
-    .code-map .row:last-child { border-bottom: 0; }
-    .tag {
-      display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .04em;
-      padding: 4px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue);
-    }
-    .path {
-      font-family: var(--mono); font-size: 12.5px; color: #0F766E; font-weight: 600;
-      word-break: break-all;
-    }
-    .path a { color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(13,148,136,.4); }
-    .path a:hover { border-bottom-style: solid; }
-
-    .findings li {
-      margin: 0 0 12px; padding: 14px 16px; border-radius: 14px;
-      background: white; border: 1px solid var(--line); list-style: none;
-    }
-    .findings { padding: 0; margin: 0; }
-    .findings strong { color: var(--navy); }
-
-    .footer-note {
-      margin-top: 40px; text-align: center; color: var(--muted); font-size: 13px;
-    }
-
-    .kbd {
-      font-family: var(--mono); font-size: 11px; border: 1px solid #CBD5E1;
-      border-bottom-width: 2px; border-radius: 6px; padding: 2px 6px; background: white;
-    }
-
-    /* floating help */
-    .fab {
-      position: fixed; right: 18px; bottom: 18px; z-index: 95;
-      background: var(--navy); color: white; border: 0; border-radius: 999px;
-      padding: 12px 16px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow);
-    }
-    .fab:hover { background: #123047; }
-
-    .toast {
-      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
-      background: rgba(15,23,42,.92); color: white; padding: 10px 14px; border-radius: 999px;
-      font-size: 13px; opacity: 0; pointer-events: none; transition: .25s ease; z-index: 120;
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoboAgent · Embodied Skill Replacement · CVPR26-USR</title>
+<link rel="stylesheet" href="./assets/fonts.css">
+<link rel="stylesheet" href="./assets/base.css">
+<link rel="stylesheet" id="theme-link" href="./assets/themes/tokyo-night.css">
+<link rel="stylesheet" href="./assets/animations/animations.css">
+<link rel="stylesheet" href="./style.css">
 </head>
-<body>
-  <div class="progress" id="progress"></div>
+<body class="tpl-presenter-mode-reveal">
+<div class="deck">
 
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="#top"><span class="brand-dot"></span> RoboAgent · USR</a>
-      <nav class="nav" id="nav">
-        <a href="#problem">问题</a>
-        <a href="#results">结果</a>
-        <a href="#architecture">架构</a>
-        <a href="#pipeline">流水线</a>
-        <a href="#code">代码地图</a>
-        <a href="#findings">结论</a>
-      </nav>
-      <div class="hint"><span class="kbd">↑</span>/<span class="kbd">↓</span> 或 <span class="kbd">J</span>/<span class="kbd">K</span> 切换</div>
+  <!-- 1 COVER -->
+  <section class="slide" data-title="Cover">
+    <p class="kicker">CVPR 2026 · frozen experimental snapshot</p>
+    <h1 class="h1 anim-fade-up" data-anim="fade-up">Embodied Skill<br><span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Replacement</span></h1>
+    <p class="lede mt-m">Contract Mismatch → Decision-Compatible Adapter → USR → SkillChannel → Decision-Aware Training</p>
+    <div class="flow-row">
+      <span class="flow-chip">Brain: Qwen2.5-VL-3B</span>
+      <span class="flow-chip">EB-ALFRED · 50 ep · seed 42</span>
+      <span class="flow-chip">frozen @ c1663fe4</span>
     </div>
-  </div>
+    <div class="speaker mt-l">
+      <div class="av"></div>
+      <div><b>RoboAgent-CVPR26-USR</b><span>技术汇报 · 建议 12–15 min · 按 S 开演讲者模式</span></div>
+    </div>
+    <div class="deck-footer">
+      <span class="mono">#embodied #USR #SkillChannel</span>
+      <span class="slide-number"></span>
+    </div>
+    <aside class="notes">
+      <p>大家好。今天汇报的是我们在 RoboAgent 上做的 <strong>Embodied Skill Replacement</strong>——在预训练具身 Brain 契约不变的前提下，把异构 Foundation Model 技能换进去。</p>
+      <p>请先记住这条主线：<strong>Contract Mismatch → Adapter → USR → SkillChannel → Decision-Aware Training</strong>。</p>
+      <p>Brain 是 fine-tuned 的 <strong>Qwen2.5-VL-3B</strong>；主表来自 EB-ALFRED base、<strong>50 episodes、seed 42</strong>。仓库是 pre-optimization 的 frozen snapshot（<strong>c1663fe4</strong>）。</p>
+      <p>我这边用演讲者模式讲：按 <strong>S</strong> 可以看到当前页、下一页、逐字稿和计时器。有问题随时打断。我们先过议程。</p>
+    </aside>
+  </section>
 
-  <main id="top">
-    <!-- HERO -->
-    <section class="slide hero" data-slide>
-      <div class="eyebrow">CVPR 2026 · Frozen Experimental Snapshot</div>
-      <h1>Embodied Skill Replacement</h1>
-      <p class="sub">
-        把异构 Foundation Model 技能模块接入预训练具身 Brain（RoboAgent / Qwen2.5-VL-3B），
-        在不破坏 Brain 契约的前提下，解决合同失配、统一表征与决策信号消费。
-      </p>
-      <div class="pipeline">
-        <span class="chip">Contract Mismatch</span><span class="arrow">→</span>
-        <span class="chip">Decision-Compatible Adapter</span><span class="arrow">→</span>
-        <span class="chip">USR</span><span class="arrow">→</span>
-        <span class="chip">SkillChannel</span><span class="arrow">→</span>
-        <span class="chip">Decision-Aware Training</span>
-      </div>
-      <div class="meta-row">
-        <span class="pill">EB-ALFRED · 50 ep · seed 42</span>
-        <span class="pill">Brain: Qwen2.5-VL-3B</span>
-        <span class="pill">Frozen @ c1663fe4</span>
-      </div>
-    </section>
+  <!-- 2 AGENDA -->
+  <section class="slide" data-title="Agenda">
+    <p class="kicker">agenda</p>
+    <h2 class="h2">今天怎么讲</h2>
+    <div class="stack mt-l">
+      <div class="agenda-row"><span class="num">01</span><span class="t">问题：为什么直接替换技能会崩</span><span class="d">~2min</span></div>
+      <div class="agenda-row"><span class="num">02</span><span class="t">主结果：Align / McNemar / DA-FT</span><span class="d">~3min</span></div>
+      <div class="agenda-row"><span class="num">03</span><span class="t">架构：五层流水线 + 结构关系</span><span class="d">~4min</span></div>
+      <div class="agenda-row"><span class="num">04</span><span class="t">代码地图：讲到哪打开哪</span><span class="d">~3min</span></div>
+      <div class="agenda-row"><span class="num">05</span><span class="t">消融解释 + 三条结论 + Q&amp;A</span><span class="d">~3min</span></div>
+    </div>
+    <aside class="notes">
+      <p>议程五块。</p>
+      <p>第一，<strong>问题</strong>——Naive 替换为什么 SR 掉到 34%。</p>
+      <p>第二，<strong>主结果</strong>——Align 拉回 80%，McNemar 和 DA-FT 怎么读。</p>
+      <p>第三，<strong>架构</strong>——从左到右五层，谁产出、谁消费、契约怎么守。</p>
+      <p>第四，<strong>代码地图</strong>——每层对应仓库里哪个文件、实现长什么样。这一页方便老师现场追问。</p>
+      <p>第五，<strong>消融 + 结论</strong>。OK，进入问题。</p>
+    </aside>
+  </section>
 
-    <!-- PROBLEM -->
-    <section class="slide" id="problem" data-slide>
-      <h2>问题：直接替换技能为什么会崩？</h2>
-      <p class="lead">异构 FM（如 Grounding DINO / LLMDet）替换 object grounding 等技能时，输出并不等于 Brain 期待的契约。</p>
+  <!-- 3 PROBLEM -->
+  <section class="slide" data-title="Problem">
+    <p class="kicker">// 01 · problem</p>
+    <h2 class="h2">异构 FM 直接替换，<br>Brain 会<span class="accent">读不懂</span>。</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>场景</h4>
+        <p class="dim">用 Grounding DINO / LLMDet 替换 RoboAgent 的 object grounding。检测可能成功，但标签词表 / 格式 / 语义 ≠ Brain 契约。</p>
+      </div>
+      <div class="card card-accent">
+        <h4>Naive 后果</h4>
+        <p class="dim">SR <strong>34%</strong>（Native 78%）。大量失败是 <code>lpm_error</code>：检测到了，下游动作却错——典型<strong>合同失配</strong>。</p>
+      </div>
+    </div>
+    <div class="grid g2 mt-m">
       <div class="card">
-        <div class="problem-item">
-          <div class="num">1</div>
-          <div>
-            <h3>Contract mismatch</h3>
-            <p>词汇 / 格式 / 语义与 Brain 期望不一致。</p>
-          </div>
-        </div>
-        <div class="problem-item">
-          <div class="num">2</div>
-          <div>
-            <h3>Naive replacement</h3>
-            <p>直接替换会导致灾难性退化（Naive SR <strong>34%</strong>）。</p>
-          </div>
-        </div>
-        <div class="problem-item">
-          <div class="num">3</div>
-          <div>
-            <h3>Multi-skill plumbing</h3>
-            <p>多技能需要统一、可类型检查、可审计的通信通道。</p>
-          </div>
-        </div>
-        <div class="problem-item">
-          <div class="num">4</div>
-          <div>
-            <h3>Decision signals</h3>
-            <p>Brain 需要消费 <code>found / confidence / uncertainty</code>，而不只是 object label。</p>
-          </div>
-        </div>
+        <h4>还缺两件事</h4>
+        <p class="dim">① 多技能需要统一、可类型检查、可审计的通道<br>② Brain 要消费 <code>found / confidence / uncertainty</code>，不只是 class 名</p>
       </div>
-    </section>
-
-    <!-- RESULTS -->
-    <section class="slide" id="results" data-slide>
-      <h2>主结果：一屏看懂贡献</h2>
-      <p class="lead">同一 Brain、同一 seed（42）、EB-ALFRED base 50 episodes。数字全部来自 per-episode manifests。</p>
-
-      <div class="grid-4" style="margin-bottom:18px">
-        <div class="stat"><div class="v down" data-count="34">0</div><div class="l">Naive SR</div></div>
-        <div class="stat"><div class="v up" data-count="80">0</div><div class="l">Align SR</div></div>
-        <div class="stat"><div class="v" data-count="98">0</div><div class="l">DA-FT Acc %</div></div>
-        <div class="stat"><div class="v" data-count="12">0</div><div class="l">Contract Tests</div></div>
-      </div>
-
       <div class="card">
-        <table class="clean">
-          <thead>
-            <tr><th>Config</th><th>Meaning</th><th>SR</th><th>Visual</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Native</td><td>RoboAgent native</td><td><strong>78%</strong></td>
-              <td><div class="bar-wrap"><div class="bar" data-w="78"></div></div></td>
-            </tr>
-            <tr class="bad">
-              <td>Naive</td><td>GDINO 直接替换，无 adapter</td><td><strong>34%</strong></td>
-              <td><div class="bar-wrap"><div class="bar bad" data-w="34"></div></div></td>
-            </tr>
-            <tr class="hl">
-              <td>Align</td><td>GDINO + Decision-Compatible Adapter</td><td><strong>80%</strong></td>
-              <td><div class="bar-wrap"><div class="bar" data-w="80"></div></div></td>
-            </tr>
-            <tr>
-              <td>Align+USR</td><td>Align + USR Channel</td><td>78%</td>
-              <td><div class="bar-wrap"><div class="bar" data-w="78"></div></div></td>
-            </tr>
-            <tr class="hl">
-              <td>FullIndep</td><td>OG + independent EG-LoRA + SD + USR</td><td><strong>80%</strong></td>
-              <td><div class="bar-wrap"><div class="bar" data-w="80"></div></div></td>
-            </tr>
-          </tbody>
-        </table>
-        <p style="margin:14px 0 0;color:var(--muted);font-size:13px">
-          Exact McNemar (Align vs Naive): <strong>p &lt; 0.001</strong> · <strong>23 recovered</strong> · <strong>0 regression</strong>
-          &nbsp;·&nbsp; Ablation: canonical 48% / +signals 61% / flat-USR 58% / shuffled 28%
-        </p>
+        <h4>对照代码</h4>
+        <p class="dim path-list"><b>agents/naive_detector.py</b><br>原始检测标签直通 Brain<br><br><b>agents/agent.py</b><br>Think→Query → skills → LPM</p>
       </div>
-    </section>
+    </div>
+    <aside class="notes">
+      <p>问题很具体：把 Grounding DINO 或 LLMDet 直接塞进 object grounding，会发生什么？</p>
+      <p>检测器可能已经“看到”物体了，但输出的词表、格式、语义<strong>不等于</strong> Brain 期待的契约。比如 Brain 要 <code>CellPhone</code>，你给它 phone——下游 LPM 就会做错动作。</p>
+      <p>Naive 配置 SR <strong>34%</strong>，相对 Native 78% 是灾难性退化。失败 taxonomy 里大量是 <code>lpm_error</code>：检测成功、动作失败——所以根因是<strong>合同失配</strong>，不是“检不到”。</p>
+      <p>此外还有两件事：多技能不能各说各的字段；Brain 需要决策信号 <code>found / confidence / uncertainty</code>。</p>
+      <p>对照代码：失败侧看 <code>naive_detector.py</code>；Brain 调度看 <code>agent.py</code>。下一页看主结果怎么被 Adapter 拉回来。</p>
+    </aside>
+  </section>
 
-    <!-- ARCHITECTURE -->
-    <section class="slide" id="architecture" data-slide>
-      <h2>Skill Architecture</h2>
-      <p class="lead">从左到右读：输入 → 异构 FM → Adapter → USR → SkillChannel → Brain → 动作。颜色只表示角色分组。</p>
-      <div class="arch-wrap" id="arch">
-        <img src="./skill-architecture.png" alt="Skill Architecture pipeline diagram" />
+  <!-- 4 RESULTS -->
+  <section class="slide" data-title="Results">
+    <p class="kicker">// 02 · main results</p>
+    <h2 class="h2">主表：同一 Brain · seed 42 · 50 ep</h2>
+    <div class="metric-grid">
+      <div class="metric"><div class="v">34%</div><div class="l">Naive SR</div></div>
+      <div class="metric"><div class="v">80%</div><div class="l">Align SR</div></div>
+      <div class="metric"><div class="v">98%</div><div class="l">DA-FT Acc</div></div>
+      <div class="metric"><div class="v">12/12</div><div class="l">Contract tests</div></div>
+    </div>
+    <table class="kpi">
+      <thead><tr><th>Config</th><th>Meaning</th><th>SR</th><th>GCR</th></tr></thead>
+      <tbody>
+        <tr><td>Native</td><td>RoboAgent native</td><td><strong>78%</strong></td><td>0.78</td></tr>
+        <tr class="bad"><td>Naive</td><td>GDINO 直接替换，无 adapter</td><td><strong>34%</strong></td><td>0.34</td></tr>
+        <tr class="good"><td>Align</td><td>GDINO + Decision-Compatible Adapter</td><td><strong>80%</strong></td><td>0.80</td></tr>
+        <tr><td>Align+USR</td><td>Align + USR Channel</td><td>78%</td><td>0.78</td></tr>
+        <tr class="good"><td>FullIndep</td><td>OG + independent EG-LoRA + SD + USR</td><td><strong>80%</strong></td><td>0.80</td></tr>
+      </tbody>
+    </table>
+    <aside class="notes">
+      <p>所有数字来自 <strong>per-episode manifests</strong>，不是手填。同一 Brain、同一 generation config、seed <strong>42</strong>、50 episodes。</p>
+      <p>请盯两行：Naive <strong>34%</strong>，Align <strong>80%</strong>。加 Decision-Compatible Adapter 之后，性能回到甚至略超 Native（78%）。</p>
+      <p>Align+USR 是 78%，FullIndep 是 80%。所以<strong>主杠杆是 Adapter</strong>；USR 的价值后面用消融和 DA-FT 讲，不要硬说“USR 又刷高了 SR”。</p>
+      <p>右上四个数记一下：34、80、DA-FT 98%、合同测试 12/12。下一页把统计显著性讲清。</p>
+    </aside>
+  </section>
+
+  <!-- 5 STATS -->
+  <section class="slide" data-title="Stats">
+    <p class="kicker">// 02 · evidence</p>
+    <h2 class="h2">怎么证明不是运气？</h2>
+    <div class="grid g3 mt-l">
+      <div class="card card-accent">
+        <h4>Exact McNemar</h4>
+        <p class="dim">Align vs Naive，同 episode 配对。<br><strong>b=23</strong>（Naive 败 Align 胜）<br><strong>c=0</strong>（反向）<br><strong>p ≈ 2.4e-7 &lt; 0.001</strong><br>0 regression · 23 recovered</p>
       </div>
-      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:10px">
-        实线 = 数据 / USR 流 · 虚线 = 控制（skill call）
-      </p>
-    </section>
-
-    <!-- PIPELINE INTERACTIVE -->
-    <section class="slide" id="pipeline" data-slide>
-      <h2>五层流水线：点一下看实现</h2>
-      <p class="lead">汇报时按 1→5 讲清楚“谁产生什么、谁消费什么、契约如何守住”。</p>
-      <div class="stages" id="stages">
-        <div class="stage active" data-stage="1">
-          <div class="k">STAGE 1</div>
-          <h4>Foundation Models</h4>
-          <p>OG / SD / EG 可替换后端</p>
-        </div>
-        <div class="stage" data-stage="2">
-          <div class="k">STAGE 2</div>
-          <h4>Adapter</h4>
-          <p>remap v3 合同对齐</p>
-        </div>
-        <div class="stage" data-stage="3">
-          <div class="k">STAGE 3</div>
-          <h4>USR v2.0</h4>
-          <p>统一结构化表征</p>
-        </div>
-        <div class="stage" data-stage="4">
-          <div class="k">STAGE 4</div>
-          <h4>SkillChannel</h4>
-          <p>发布 / 消费 / 审计门</p>
-        </div>
-        <div class="stage" data-stage="5">
-          <div class="k">STAGE 5</div>
-          <h4>Pretrained Brain</h4>
-          <p>Scheduler + LPM</p>
-        </div>
+      <div class="card card-accent">
+        <h4>DA-FT</h4>
+        <p class="dim">35 例 × 5 信号态 = 175 probes。<br>只改 <code>found/confidence/uncertainty</code>。<br>决策准确率 <strong>172/175 = 98%</strong><br>signal-sensitive <strong>34/35</strong><br>raw-FT 仅 40%，且 0/35 sensitive</p>
       </div>
-      <div class="detail show" id="stageDetail"></div>
-    </section>
-
-    <!-- CODE MAP -->
-    <section class="slide" id="code" data-slide>
-      <h2>代码地图：讲到哪打开哪</h2>
-      <p class="lead">下面是汇报顺序对应的仓库路径。链接指向 GitHub 上的源文件。</p>
-      <div class="card code-map">
-        <div class="row">
-          <div><span class="tag">Brain</span></div>
-          <div class="path"><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/agent.py" target="_blank" rel="noopener">agents/agent.py</a><br/><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/prompt_ebalf.py" target="_blank" rel="noopener">agents/prompt_ebalf.py</a></div>
-          <div>Think→Query 调度；技能进 <code>ability_buffer</code>；LPM=<code>manipulation_planner</code>。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">Naive 失败</span></div>
-          <div class="path"><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/naive_detector.py" target="_blank" rel="noopener">agents/naive_detector.py</a></div>
-          <div>原始检测标签直通 Brain，对应 Naive <strong>34%</strong> 的合同失配故事。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">Adapter</span></div>
-          <div class="path">
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/og_remap_only.py" target="_blank" rel="noopener">agents/og_remap_only.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/contract_adapter.py" target="_blank" rel="noopener">agents/contract_adapter.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/skill_alignment.py" target="_blank" rel="noopener">agents/skill_alignment.py</a>
-          </div>
-          <div>remap v3：canonicalize / functional override / no-veto / found / fallback → Align <strong>80%</strong>。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">Detectors</span></div>
-          <div class="path">
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/detector_registry.py" target="_blank" rel="noopener">agents/detector_registry.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/llmdet_qwen_og.py" target="_blank" rel="noopener">agents/llmdet_qwen_og.py</a>
-          </div>
-          <div><code>ROBOAGENT_DETECTOR=llmdet|gdino</code> 统一检测入口。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">USR</span></div>
-          <div class="path">
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr.py" target="_blank" rel="noopener">agents/usr.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr_og_backend.py" target="_blank" rel="noopener">agents/usr_og_backend.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr_sd_eg.py" target="_blank" rel="noopener">agents/usr_sd_eg.py</a>
-          </div>
-          <div>USR v2.0 四段：facts / semantics / decision_signals / provenance。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">Channel</span></div>
-          <div class="path"><a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/usr_channel.py" target="_blank" rel="noopener">agents/usr_channel.py</a></div>
-          <div><code>publish</code> / <code>consume</code> whitelist · raw blocked · contract audit（12/12）。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">SD / EG</span></div>
-          <div class="path">
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/florence2_sd.py" target="_blank" rel="noopener">agents/florence2_sd.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/eg_lora_backend.py" target="_blank" rel="noopener">agents/eg_lora_backend.py</a>
-          </div>
-          <div>Florence-2 SD；独立 EG-LoRA（FullIndep 配置）。</div>
-        </div>
-        <div class="row">
-          <div><span class="tag">Eval</span></div>
-          <div class="path">
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/run_ebalf.py" target="_blank" rel="noopener">run_ebalf.py</a><br/>
-            <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/agents/run_manifest.py" target="_blank" rel="noopener">agents/run_manifest.py</a>
-          </div>
-          <div>评测入口 + 不可篡改的 run/episode manifests（数字审计来源）。</div>
-        </div>
+      <div class="card card-accent">
+        <h4>Ablation</h4>
+        <p class="dim">canonical <strong>48%</strong><br>canonical+signals <strong>61%</strong><br>flat-USR <strong>58%</strong><br>shuffled-USR <strong>28%</strong><br>打乱信号就崩 → 学的是 signal→decision</p>
       </div>
-    </section>
+    </div>
+    <aside class="notes">
+      <p>三块证据。</p>
+      <p>第一，<strong>Exact McNemar</strong>：同一 episode 上比 Align 和 Naive。Naive 失败 Align 成功有 <strong>23</strong> 集，反过来 <strong>0</strong> 集，p 约 <strong>2.4e-7</strong>。所以不是偶然波动，而且没有 regression。</p>
+      <p>第二，<strong>DA-FT</strong>：固定 RGB/目标/历史/物体类，只改 USR 决策信号，5 种状态。决策准确率 <strong>98%</strong>，34/35 例会对信号敏感；raw-FT 还是 40%，而且对信号不敏感。</p>
+      <p>第三，<strong>消融</strong>：加 signals 到 61%，flat-USR 58% 差不多；把 signals <em>打乱</em> 掉到 28%。这说明模型学的是映射，不是记住 USR 字符串长什么样。</p>
+      <p>好，接下来看架构图——结构关系怎么串起来。</p>
+    </aside>
+  </section>
 
-    <!-- FINDINGS -->
-    <section class="slide" id="findings" data-slide>
-      <h2>三条核心结论</h2>
-      <p class="lead">汇报收尾用这三条就够；细节回到 Evaluation Protocols。</p>
-      <ol class="findings">
-        <li><strong>1. Adapter 是主贡献</strong>：naive 34% → aligned 80%（+46pp）。主要失败是下游合同失配，而不是“检测不到”。</li>
-        <li><strong>2. USR 的价值在决策信号</strong>：canonical+signals 61% ≈ flat-USR 58%；shuffled-USR 崩到 28%，说明学到的是 signal→decision。</li>
-        <li><strong>3. Decision-aware training 让 Brain 会用信号</strong>：DA-FT 98%（172/175）vs raw-FT 40%；signal-sensitive 34/35。</li>
-      </ol>
-      <div class="card" style="margin-top:16px">
-        <strong>一句话收束</strong>
-        <p style="margin:8px 0 0;color:var(--muted)">
-          异构技能可以替换，但必须先对齐契约（Adapter），再用统一表征与通道（USR + SkillChannel）把决策信号安全交给 Brain。
-        </p>
+  <!-- 6 ARCHITECTURE -->
+  <section class="slide" data-title="Architecture">
+    <p class="kicker">// 03 · architecture</p>
+    <h2 class="h2">Skill Architecture · 从左到右读</h2>
+    <p class="lede">颜色只表示角色分组；实线 = 数据/USR；虚线 = skill call 控制回流。</p>
+    <img class="arch-img mt-m" src="./skill-architecture.png" alt="Skill Architecture pipeline">
+    <aside class="notes">
+      <p>这张图请从<strong>左到右</strong>读。</p>
+      <p>Input（RGB / instruction / history）进异构 FM：OG、SD、EG。然后进 Decision-Compatible Adapter，把原始输出对齐成 Brain 契约。再变成 USR v2.0 四段结构。经过 SkillChannel 门禁——publish / consume / audit——最后到冻结 Brain 的 Scheduler 和 LPM，输出 execute / guard / reobserve。</p>
+      <p>虚线是 <strong>skill call</strong>：Scheduler 还会回头调技能。颜色不是装饰，是角色分组：蓝后端、绿 adapter、橙表征、灰通道、黑 Brain。</p>
+      <p>下一页把 1–2 层拆开讲，并对应到代码。</p>
+    </aside>
+  </section>
+
+  <!-- 7 STAGE 1-2 -->
+  <section class="slide" data-title="FM + Adapter">
+    <p class="kicker">// 03 · stage 1–2</p>
+    <h2 class="h2">FM 可替换 · Adapter 是主杠杆</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>① Foundation Models</h4>
+        <p class="dim"><strong>OG</strong> LLMDet / GDINO<br><strong>SD</strong> Florence-2<br><strong>EG</strong> Qwen-EG / eg-LoRA<br><br>环境变量切后端：<br><code>ROBOAGENT_DETECTOR</code><br><code>ROBOAGENT_SD_BACKEND</code><br><code>ROBOAGENT_EG_BACKEND</code></p>
+        <p class="dim path-list mt-s"><b>detector_registry.py</b><br><b>florence2_sd.py</b><br><b>eg_lora_backend.py</b></p>
       </div>
-    </section>
+      <div class="card card-accent">
+        <h4>② Decision-Compatible Adapter</h4>
+        <p class="dim">remap v3：canonicalize · functional override · no-veto · found · fallback<br><br>把“检测成功但标签不对”修成 Brain 可消费合同。<br><strong>34% → 80%</strong> 主要发生在这里。</p>
+        <p class="dim path-list mt-s"><b>og_remap_only.py</b> · <code>ground_remap_only</code><br><b>contract_adapter.py</b> · <code>adapt_label</code><br><b>skill_alignment.py</b> · <code>canonicalize_label</code></p>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>第一层，Foundation Models。OG / SD / EG 都是可替换后端。检测走 registry，SD 可切 Florence-2，EG 可切独立 LoRA——FullIndep 配置就用到 eg-LoRA。</p>
+      <p>第二层最重要：<strong>Decision-Compatible Adapter</strong>。remap v3 做 canonicalize、functional override、高置信 no-veto、found / fallback。它不是再训练检测器，而是把输出<strong>对齐到 Brain 词表和决策字段</strong>。</p>
+      <p>实现上：<code>og_remap_only.ground_remap_only</code> 是主路径；<code>contract_adapter.adapt_label</code> 做合同适配；<code>skill_alignment.canonicalize_label</code> 管规范名。现场如果只开一个文件，就开 <strong>og_remap_only.py</strong>。</p>
+      <p>记住一句话：主贡献在 Adapter，不在“换个更强检测器”这么简单。</p>
+    </aside>
+  </section>
 
-    <p class="footer-note">
-      RoboAgent-CVPR26-USR · frozen experimental code ·
-      <a href="https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR" target="_blank" rel="noopener">GitHub</a>
-    </p>
-  </main>
+  <!-- 8 STAGE 3-4 -->
+  <section class="slide" data-title="USR + Channel">
+    <p class="kicker">// 03 · stage 3–4</p>
+    <h2 class="h2">USR 统一表征 · SkillChannel 守门</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>③ USR v2.0</h4>
+        <p class="dim"><code>environment_facts</code><br><code>task_semantics</code><br><code>decision_signals</code><br><code>provenance</code><br><br>OG→USR 与 remap v3 <strong>决策等价</strong>；SD/EG 也有 round-trip。</p>
+        <p class="dim path-list mt-s"><b>usr.py</b> · <code>make_usr</code> / <code>og_adapter_full</code><br><b>usr_og_backend.py</b> · <code>ground_usr</code><br><b>usr_sd_eg.py</b> · SD/EG 解析<br><b>usr_reliability.py</b> · schema sanitize</p>
+      </div>
+      <div class="card card-accent">
+        <h4>④ SkillChannel</h4>
+        <p class="dim"><code>publish(skill, USR)</code> 校验 schema<br><code>consume(skill, public_field)</code> 仅 whitelist<br>raw（bbox / det_query…）<strong>BLOCKED</strong><br>机器可读 contract audit · <strong>12/12</strong></p>
+        <p class="dim path-list mt-s"><b>usr_channel.py</b><br><code>SkillChannel.publish / consume</code><br><code>PUBLIC_FIELDS</code> / <code>RAW_FIELDS</code><br><code>contract_audit</code></p>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>第三层 USR：四段结构——环境事实、任务语义、决策信号、溯源。OG 路径上，USR 和 remap v3 决策等价，所以 Align 的行为可以无缝接到 USR 通道。</p>
+      <p>打开 <code>usr.py</code> 看 <code>make_usr</code>；<code>usr_og_backend.ground_usr</code> 是 remap→USR 桥；SD/EG 在 <code>usr_sd_eg.py</code>。</p>
+      <p>第四层 SkillChannel 是门。<strong>publish</strong> 先过 schema；<strong>consume</strong> 只能拿公开字段；raw 模型输出进不来。每次调用写 audit 记录，合同测试 12/12。</p>
+      <p>现场追问“怎么保证异构模型私货不漏进 Brain”——直接翻 <code>usr_channel.py</code> 的 <code>PUBLIC_FIELDS</code> 和 <code>consume</code>。</p>
+    </aside>
+  </section>
 
-  <button class="fab" id="helpBtn" type="button">快捷键</button>
-  <div class="toast" id="toast"></div>
+  <!-- 9 STAGE 5 -->
+  <section class="slide" data-title="Brain">
+    <p class="kicker">// 03 · stage 5</p>
+    <h2 class="h2">冻结 Brain：Think → Query → LPM</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>Scheduler</h4>
+        <p class="dim">Think→Query 协议，技能调用进入 <code>ability_buffer</code>，再分发到 OG/SD/EG/LPE/LPM。</p>
+        <p class="dim path-list mt-s"><b>agents/agent.py</b><br><code>get_core_result</code> / <code>get_ability_result</code><br><b>prompt_ebalf.py</b> · <code>prompt_ct</code></p>
+      </div>
+      <div class="card card-accent">
+        <h4>LPM / action</h4>
+        <p class="dim"><code>manipulation_planner</code> 消费场景与技能结果，输出 <strong>execute / guard / reobserve</strong>。<br>DA-FT 让它对 USR 决策信号敏感（本仓可加载 <code>ROBOAGENT_BRAIN_ADAPTER</code>；训练脚本在实验机归档）。</p>
+        <p class="dim path-list mt-s"><b>prompt_ebalf.py</b> · <code>prompt_lpm</code><br><b>qwen.py</b> · VLM inference<br><b>RESEARCH_BRAIN_DECISION_TRAINING.md</b></p>
+      </div>
+    </div>
+    <div class="flow-row">
+      <span class="flow-chip">Eval: run_ebalf.py</span>
+      <span class="flow-chip">Runner: runners/ebalf_runner.py</span>
+      <span class="flow-chip">Audit: run_manifest.py</span>
+    </div>
+    <aside class="notes">
+      <p>第五层是冻结的预训练 Brain。</p>
+      <p>Scheduler 用 Think→Query：思考后发起技能查询，结果进 buffer，再继续。LPM 是动作解码，对应 <code>manipulation_planner</code>，最终策略是 execute、guard（观望）、reobserve（再看）。</p>
+      <p>Decision-aware training 的故事：让 Brain <em>会用</em> USR 里的 found/confidence。本仓库是 frozen 实验代码，训练全量在实验机 <code>frozen_final_closure_*</code>；运行时可用环境变量挂 DA-FT LoRA。细节见研究文档。</p>
+      <p>评测入口 <code>run_ebalf.py</code>，循环在 <code>ebalf_runner.py</code>，可审计性靠 <code>run_manifest.py</code> 写出 git / hash / episode SR。</p>
+    </aside>
+  </section>
 
-  <script>
-    const GH = "https://github.com/ShinjukuZhu/RoboAgent-CVPR26-USR/blob/main/";
-    const stageCopy = {
-      1: {
-        title: "Stage 1 · Foundation Models",
-        body: "异构可替换技能后端：OG（LLMDet / Grounding DINO）、SD（Florence-2）、EG（Qwen-EG / eg-LoRA）。",
-        code: "agents/detector_registry.py · agents/florence2_sd.py · agents/eg_lora_backend.py · agents/naive_detector.py"
-      },
-      2: {
-        title: "Stage 2 · Decision-Compatible Adapter",
-        body: "remap v3 把原始检测结果变成 Brain 可消费标签：canonicalize、functional override、no-veto、found、fallback。这是 34%→80% 的主杠杆。",
-        code: "agents/og_remap_only.py · agents/contract_adapter.py · agents/skill_alignment.py"
-      },
-      3: {
-        title: "Stage 3 · Unified Skill Representation (USR v2.0)",
-        body: "四段结构：environment_facts / task_semantics / decision_signals / provenance。OG→USR 与 remap v3 决策等价。",
-        code: "agents/usr.py · agents/usr_og_backend.py · agents/usr_sd_eg.py · agents/usr_reliability.py"
-      },
-      4: {
-        title: "Stage 4 · SkillChannel",
-        body: "publish(skill, USR) 做 schema 校验；consume 只允许 PUBLIC_FIELDS；raw 字段阻断；写出可审计记录（12/12）。",
-        code: "agents/usr_channel.py"
-      },
-      5: {
-        title: "Stage 5 · Pretrained Brain",
-        body: "冻结的 fine-tuned Qwen：Scheduler（Think→Query）发起 skill call；LPM 输出 execute / guard / reobserve。",
-        code: "agents/agent.py · agents/prompt_ebalf.py · agents/qwen.py"
-      }
-    };
+  <!-- 10 CODE MAP -->
+  <section class="slide" data-title="Code Map">
+    <p class="kicker">// 04 · code map</p>
+    <h2 class="h2">现场打开顺序（建议）</h2>
+    <div class="stack mt-l">
+      <div class="rule-row"><span class="num blue">01</span><div><b>对比失败 vs 对齐</b><p class="dim path-list"><b>agents/naive_detector.py</b> → <b>agents/og_remap_only.py</b><br>一眼看清“直通标签”和“remap v3 合同对齐”差在哪。</p></div></div>
+      <div class="rule-row"><span class="num green">02</span><div><b>USR + 门禁</b><p class="dim path-list"><b>agents/usr.py</b> → <b>agents/usr_channel.py</b><br>看四段 schema，再看 PUBLIC_FIELDS / raw block / audit。</p></div></div>
+      <div class="rule-row"><span class="num orange">03</span><div><b>Brain 调度</b><p class="dim path-list"><b>agents/agent.py</b>（<code>get_ability_result</code>）+ <b>prompt_ebalf.py</b><br>Think→Query 如何把技能接到 LPM。</p></div></div>
+      <div class="rule-row"><span class="num purple">04</span><div><b>数字从哪来</b><p class="dim path-list"><b>run_ebalf.py</b> + <b>agents/run_manifest.py</b><br>run_manifest.json / episode_manifest.jsonl → 表格与 McNemar。</p></div></div>
+    </div>
+    <aside class="notes">
+      <p>如果现场要 demo 代码，按这个顺序，四步就够，不要漫游整个 agents/。</p>
+      <p>第一步，Naive 和 remap 并排——观众立刻理解合同失配。第二步，USR 和 SkillChannel——统一表征 + 守门。第三步，agent 调度——Brain 怎么调用。第四步，manifest——数字可审计。</p>
+      <p>环境变量口头提：<code>ROBOAGENT_OG_BACKEND=llmdet_qwen_remap</code>、<code>ROBOAGENT_USR_CHANNEL=1</code>、<code>ROBOAGENT_DETECTOR=gdino|llmdet</code>。不必现场跑满 50 ep。</p>
+      <p>下一页用消融把“USR 到底贡献了什么”讲死。</p>
+    </aside>
+  </section>
 
-    const detail = document.getElementById("stageDetail");
-    function renderStage(id) {
-      const s = stageCopy[id];
-      detail.innerHTML = `<strong>${s.title}</strong>
-        <p style="margin:8px 0 10px">${s.body}</p>
-        <div class="path">打开：${s.code.split(" · ").map(p => `<a href="${GH}${p}" target="_blank" rel="noopener">${p}</a>`).join(" · ")}</div>`;
-      detail.classList.add("show");
-      document.querySelectorAll(".stage").forEach(el => el.classList.toggle("active", el.dataset.stage === String(id)));
-    }
-    document.getElementById("stages").addEventListener("click", (e) => {
-      const st = e.target.closest(".stage");
-      if (!st) return;
-      renderStage(st.dataset.stage);
-    });
-    renderStage(1);
+  <!-- 11 ABLATION -->
+  <section class="slide" data-title="Ablation">
+    <p class="kicker">// 05 · ablation</p>
+    <h2 class="h2">USR 的价值在<span class="accent">决策信号</span></h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>控制变量</h4>
+        <p class="dim">同一数据池 / split / 样本数 / epochs(4) / batch(6) / lr(2e-4) / 优化步数 / 初始化 / 评测集。<br><strong>唯一差别：输入表征</strong>。</p>
+      </div>
+      <div class="card card-accent">
+        <h4>读数</h4>
+        <p class="dim">canonical 48% → +signals <strong>61%</strong><br>flat-USR <strong>58%</strong> ≈ +signals<br>shuffled-USR <strong>28%</strong> 崩盘<br><br>反事实 5 态：只有 +signals / flat-USR 达到 5/5</p>
+      </div>
+    </div>
+    <p class="lede mt-l">所以：不要把收益归因成“换成 USR 字符串格式”；归因成 <strong>显式 decision signals</strong>。</p>
+    <aside class="notes">
+      <p>这页专门防误解。</p>
+      <p>消融里一切训练超参锁死，只改输入。加上 found/confidence 之后从 48 到 61；flat-USR 58，差不多；把信号随机打乱掉到 28。</p>
+      <p>结论很干净：模型学的是 <strong>signal→decision</strong> 映射。USR 序列化本身不是主因；USR 的工程价值是把信号结构化、可审计、可经 SkillChannel 安全投喂。</p>
+      <p>Align+USR 主表是 78% 也可以这么解释：接口统一了，但 SR 主提升已经在 Adapter。</p>
+    </aside>
+  </section>
 
-    // reveal on scroll
-    const slides = [...document.querySelectorAll("[data-slide]")];
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(en => {
-        if (en.isIntersecting) {
-          en.target.classList.add("in");
-          if (en.target.id === "architecture" || en.target.querySelector?.("#arch")) {
-            document.getElementById("arch")?.classList.add("in");
-          }
-          if (en.target.id === "results") animateResults();
-        }
-      });
-    }, { threshold: 0.18 });
-    slides.forEach(s => io.observe(s));
-    const arch = document.getElementById("arch");
-    if (arch) io.observe(arch);
+  <!-- 12 FINDINGS -->
+  <section class="slide" data-title="Findings">
+    <p class="kicker">// 05 · findings</p>
+    <h2 class="h2">三条结论</h2>
+    <div class="stack mt-l">
+      <div class="rule-row"><span class="num red">01</span><div><b>Adapter 是主贡献</b><p class="dim">naive <strong>34% → aligned 80%</strong>（+46pp）。主导失败模式：下游合同失配（检测成功、动作错误）。</p></div></div>
+      <div class="rule-row"><span class="num red">02</span><div><b>USR 价值在决策信号</b><p class="dim">canonical+signals <strong>61%</strong> ≈ flat-USR <strong>58%</strong>；shuffled <strong>28%</strong> 证明学的是信号映射，不是序列化。</p></div></div>
+      <div class="rule-row"><span class="num red">03</span><div><b>DA-FT 让 Brain 会用信号</b><p class="dim">决策准确率 <strong>98%</strong>（172/175）vs raw-FT <strong>40%</strong>；signal-sensitive <strong>34/35</strong>。</p></div></div>
+    </div>
+    <aside class="notes">
+      <p>收束就这三条，建议原样说。</p>
+      <p>一，Adapter 主贡献，34 到 80，失败主因合同失配。二，USR 的行为增益来自显式决策信号。三，Decision-aware training 让 Brain 真的消费这些信号。</p>
+      <p>一句话总结：<strong>技能可以换，但必须先对齐契约，再经 USR + SkillChannel 把决策信号安全交给 Brain。</strong></p>
+      <p>谢谢。下面进入提问——代码位置刚才那页地图都可以翻。</p>
+    </aside>
+  </section>
 
-    // active nav
-    const navLinks = [...document.querySelectorAll(".nav a")];
-    const navIo = new IntersectionObserver((entries) => {
-      entries.forEach(en => {
-        if (!en.isIntersecting) return;
-        const id = en.target.id;
-        navLinks.forEach(a => a.classList.toggle("active", a.getAttribute("href") === `#${id}`));
-      });
-    }, { rootMargin: "-40% 0px -50% 0px", threshold: 0.01 });
-    ["problem","results","architecture","pipeline","code","findings"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) navIo.observe(el);
-    });
+  <!-- 13 QA -->
+  <section class="slide" data-title="Q&A">
+    <p class="kicker">// Q&amp;A</p>
+    <h2 class="h2">提问 / 备用短答</h2>
+    <div class="grid g2 mt-l">
+      <div class="card">
+        <h4>Align+USR 为何不是更高？</h4>
+        <p class="dim">Align 已 80%。USR 主证据在消融与 DA-FT，强调统一接口与可审计，不夸大 SR。</p>
+      </div>
+      <div class="card">
+        <h4>训练代码在哪？</h4>
+        <p class="dim">本仓 frozen 实验代码。DA-FT 见 <code>RESEARCH_BRAIN_DECISION_TRAINING.md</code>；全量权重/训练在实验机归档。</p>
+      </div>
+      <div class="card">
+        <h4>如何证明 raw 被挡住？</h4>
+        <p class="dim">打开 <code>usr_channel.py</code> 的 <code>PUBLIC_FIELDS</code> / <code>RAW_FIELDS</code> / <code>consume</code>；合同测试 12/12。</p>
+      </div>
+      <div class="card">
+        <h4>操作提示</h4>
+        <p class="dim"><span class="mono">S</span> 演讲者视图 · <span class="mono">T</span> 主题 · <span class="mono">←→</span> 翻页 · <span class="mono">F</span> 全屏 · <span class="mono">O</span> 总览</p>
+      </div>
+    </div>
+    <div class="deck-footer">
+      <span class="mono">github.com/ShinjukuZhu/RoboAgent-CVPR26-USR</span>
+      <span class="slide-number"></span>
+    </div>
+    <aside class="notes">
+      <p>备用答疑页。四个常见问题都写在卡片上了，按需展开即可。</p>
+      <p>如果老师要看实现，优先开：naive vs og_remap_only、usr_channel、agent、run_manifest。</p>
+      <p>再次感谢，结束。</p>
+    </aside>
+  </section>
 
-    // progress
-    const progress = document.getElementById("progress");
-    window.addEventListener("scroll", () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      progress.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
-    }, { passive: true });
+</div>
 
-    // counters + bars
-    let resultsDone = false;
-    function animateResults() {
-      if (resultsDone) return;
-      resultsDone = true;
-      document.querySelectorAll("[data-count]").forEach(el => {
-        const target = Number(el.dataset.count);
-        const t0 = performance.now();
-        const dur = 900;
-        const tick = (t) => {
-          const p = Math.min(1, (t - t0) / dur);
-          const eased = 1 - Math.pow(1 - p, 3);
-          el.textContent = Math.round(target * eased) + (target >= 12 && target !== 12 ? "" : "") ;
-          if (target === 12) el.textContent = Math.round(target * eased) + "/12";
-          else if (el.classList.contains("up") || el.classList.contains("down") || target >= 30) el.textContent = Math.round(target * eased) + "%";
-          if (p < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      });
-      document.querySelectorAll(".bar").forEach(b => { b.style.width = b.dataset.w + "%"; });
-    }
+<div style="position:fixed;bottom:12px;left:12px;font-size:11px;color:#484f5866;z-index:100;pointer-events:none">
+  S 演讲者视图 · T 主题 · ← → 翻页 · F 全屏 · O 总览 · N 笔记抽屉 · R 重置计时
+</div>
 
-    // keyboard navigation between sections
-    function currentIndex() {
-      const y = window.scrollY + window.innerHeight * 0.25;
-      let idx = 0;
-      slides.forEach((s, i) => { if (s.offsetTop <= y) idx = i; });
-      return idx;
-    }
-    function go(delta) {
-      const i = Math.max(0, Math.min(slides.length - 1, currentIndex() + delta));
-      slides[i].scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-    window.addEventListener("keydown", (e) => {
-      if (["INPUT","TEXTAREA"].includes(document.activeElement.tagName)) return;
-      if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === "j" || e.key === "J") { e.preventDefault(); go(1); }
-      if (e.key === "ArrowUp" || e.key === "PageUp" || e.key === "k" || e.key === "K") { e.preventDefault(); go(-1); }
-      if (e.key === "Home") { e.preventDefault(); slides[0].scrollIntoView({ behavior: "smooth" }); }
-      if (e.key === "End") { e.preventDefault(); slides[slides.length-1].scrollIntoView({ behavior: "smooth" }); }
-      if (e.key >= "1" && e.key <= "5" && document.getElementById("pipeline")) {
-        renderStage(e.key);
-        document.getElementById("pipeline").scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    });
-
-    const toast = document.getElementById("toast");
-    document.getElementById("helpBtn").addEventListener("click", () => {
-      toast.textContent = "↑↓ / J K 切换段落 · 1-5 切换流水线层 · 点击 Stage 卡片看代码";
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 2600);
-    });
-  </script>
+<script src="./assets/runtime.js"></script>
 </body>
 </html>

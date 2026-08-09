@@ -37,8 +37,8 @@
 
 Frozen experimental code for replacing specialized Foundation Model (FM) skill modules inside a pretrained embodied agent (**RoboAgent**, fine-tuned **Qwen2.5-VL-3B**) while keeping the Brain's contract intact.
 
-> **Interactive demo page:** [`presentation/index.html`](presentation/index.html)  
-> (keyboard: `↑/↓` or `J/K`; pipeline stages: `1`–`5`)
+> **Demo deck (html-ppt presenter mode):** [`presentation/index.html`](presentation/index.html)  
+> Keys: `S` speaker script · `T` theme · `←/→` navigate · `F` fullscreen · `O` overview
 
 > **Pre-optimization frozen snapshot** (commit `c1663fe4`).  
 > Subsequent optimization experiments live on the `topconf-contract-evolution` branch.
