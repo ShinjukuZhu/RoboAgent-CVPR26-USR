@@ -197,6 +197,16 @@ All numbers below are computed from **per-episode manifests** (never hand-filled
   | 10/10b | raw model-output leakage | detected + isolated |
 - Every call emits a **machine-readable contract audit** record: `producer / consumer / episode_id / step_id / schema_version / fields_consumed / fields_blocked / validation_result`.
 
+## Research Docs
+
+Three research surveys requested by our advisor, archived in this repo:
+
+| Doc | Topic | Answer in one line |
+|-----|-------|--------------------|
+| [`RESEARCH_SOTA_SURVEY.md`](RESEARCH_SOTA_SURVEY.md) | SOTA embodied agents / FM-as-Skill / training paradigms / benchmarks | RoboAgent sits between "pure-action VLA" and "LLM-orchestrated skills" |
+| [`RESEARCH_BRAIN_DECISION_TRAINING.md`](RESEARCH_BRAIN_DECISION_TRAINING.md) | Does the baseline (fine-tuned Qwen) train the "decision" part? What data? | Official Brain trains scheduler + LPM + canonical vocab, but **no decision-signal supervision**; data/code not released |
+| [`RESEARCH_MODULE_SKILL_COMPOSITION.md`](RESEARCH_MODULE_SKILL_COMPOSITION.md) | How do split modules (skills) reliably connect to the Brain? | Adapter (align) + USR (unify) + SkillChannel (validate) + decision-aware training (consume signals) |
+
 ## Core Findings
 
 1. **Contract Mismatch + Decision-Compatible Adapter** is the primary performance contribution: naive 34% → aligned 80% (+46pp). In audited failures, the dominant failure mode was downstream contract mismatch (OG detection succeeds but the label does not match the Brain's expected contract → wrong downstream action).
