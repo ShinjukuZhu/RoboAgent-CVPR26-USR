@@ -207,6 +207,8 @@ Three research surveys requested by our advisor, archived in this repo:
 | [`RESEARCH_BRAIN_DECISION_TRAINING.md`](RESEARCH_BRAIN_DECISION_TRAINING.md) | Does the baseline (fine-tuned Qwen) train the "decision" part? What data? | Official Brain trains scheduler + LPM + canonical vocab, but **no decision-signal supervision**; data/code not released |
 | [`RESEARCH_MODULE_SKILL_COMPOSITION.md`](RESEARCH_MODULE_SKILL_COMPOSITION.md) | How do split modules (skills) reliably connect to the Brain? | Adapter (align) + USR (unify) + SkillChannel (validate) + decision-aware training (consume signals) |
 
+> A combined single-file summary of all three surveys is in [`INVESTIGATION_RESPONSE.md`](INVESTIGATION_RESPONSE.md).
+
 ## Core Findings
 
 1. **Contract Mismatch + Decision-Compatible Adapter** is the primary performance contribution: naive 34% → aligned 80% (+46pp). In audited failures, the dominant failure mode was downstream contract mismatch (OG detection succeeds but the label does not match the Brain's expected contract → wrong downstream action).
