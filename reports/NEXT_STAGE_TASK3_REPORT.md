@@ -26,7 +26,12 @@
 4. **这回答了用户核心诉求**：Brain 消费增强 + Scheduler contract 保持 = 分层范围选对即可
 
 ## 全量评测（EB50 + AW134, l10-35 adapter on 7B 主模型）
-（运行中，完成后补入——用于确认无 SR regression）
+| 评测 | SR | 对比冻结 |
+|------|-----|----------|
+| **EB50 base (n=50, 全量)** | **0.80** | Native 0.78 / Align 0.80 |
+| AW134 (n=134) | 运行中（完成后补） | AW134 Native 0.81 / Align 0.84 |
+
+**EB50 全量确认**: l10-35 adapter SR 0.80（40/50），≥ Native 0.78 且持平 Align 0.80——**决策消费增强无 scheduler regression**。
 
 ## 证据
 - checkpoints: brain_da_l10_35, brain_da_l0_35

@@ -26,6 +26,7 @@
 
 ## 诚实标注
 - 7B 侧 base 用微调主模型 RoboAgent_CVPR26（更强基线）；3B 侧用原始共享 base——**3B 在较弱基线下仍达 92% fidelity，支持 scale-down 可行性**
-- 未做 3B 全量 EB50/AW134（GPU 预算；若需可补）
+- **3B 端到端 EB50 全量 FAILED**（NotImplementedError: agent.py get_ability_result——3B base 缺 RoboAgent skill 适配链，非 adapter 问题）：3B 只能做决策消费验证（fidelity 0.92），无法端到端跑 EB/AW。**这是 scale 的诚实边界：3B 决策消费可行，但 skill 链未适配 3B**
+- 7B 全量 EB50 SR 0.80 DONE；7B AW134 运行中
 
-## STATUS: DONE（fidelity 侧）/ 全量 EB50-AW134 pending
+## STATUS: DONE（fidelity 侧 + EB50 7B 全量）/ 3B 端到端 FAILED(NotImplemented) / AW134 pending
