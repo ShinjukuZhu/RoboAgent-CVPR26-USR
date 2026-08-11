@@ -1,0 +1,60 @@
+{
+  "manifest_version": "next_stage_v1",
+  "timestamp": "2026-08-08T00:00:00Z",
+  "purpose": "Immutable baseline for Next Stage research — records all frozen results and their commit/hash anchors. Any new experiment must NOT overwrite these.",
+  "git": {
+    "frozen_commit": "c1663fe477995142a528a9df7fc5e3efe5e4b8ca",
+    "current_commit": "b9b7fc52b9e991abd76ec20fed9e2539a804a97c",
+    "current_branch": "research/next-stage-final",
+    "tags": [
+      "research-base-v1", "p0a-evolution-v1", "p0a-evolution-v2",
+      "research-p0b-p1a-p2", "research-timing-full"
+    ]
+  },
+  "frozen_results": {
+    "EB50": {
+      "Native": {"SR": 0.78, "GCR": 0.78, "n": 50},
+      "Naive_GDINO": {"SR": 0.34, "GCR": 0.34, "n": 50},
+      "Align_Adapter": {"SR": 0.80, "GCR": 0.80, "n": 50},
+      "Align_USR": {"SR": 0.78, "GCR": 0.78, "n": 50},
+      "FullIndep": {"SR": 0.80, "GCR": 0.80, "n": 50}
+    },
+    "AW134": {
+      "Native": {"SR": 0.81, "GCR": null, "n": 134},
+      "Align": {"SR": 0.84, "GCR": null, "n": 134}
+    },
+    "paired_exact_mcnemar": {
+      "Align_vs_Naive": {"b": 23, "c": 0, "p": 2.4e-7},
+      "Align_vs_AlignUSR": {"b": 1, "c": 0, "p": 1.0},
+      "Align_vs_FullIndep": {"b": 1, "c": 1, "p": 1.0}
+    },
+    "counterfactual": {
+      "raw-FT": 0.40, "DA-full": 0.98, "DA-layered": 0.53
+    },
+    "ablation": {
+      "raw": 0.35, "canonical": 0.48, "canonical+signals": 0.61,
+      "flat-USR": 0.58, "shuffled-USR": 0.28
+    },
+    "skillchannel_tests": "12/12",
+    "timing": {
+      "EB_baseline_Native": {"SR": 0.80, "avg_s_per_ep": 104.7},
+      "EB_current_Align": {"SR": 0.78, "avg_s_per_ep": 115.7},
+      "AW_baseline_Native": {"SR": 0.81, "avg_s_per_ep": 189.0},
+      "AW_current_Align": {"SR": 0.84, "avg_s_per_ep": 148.9}
+    }
+  },
+  "artifacts": {
+    "FINAL_EB50_RESULTS.json": "runs/final_artifacts/FINAL_EB50_RESULTS.json",
+    "FINAL_PAIRED_TESTS.json": "runs/final_artifacts/FINAL_PAIRED_TESTS.json",
+    "FINAL_FAILURE_TAXONOMY.json": "runs/final_artifacts/FINAL_FAILURE_TAXONOMY.json",
+    "FINAL_USR_ABLATION.json": "runs/final_artifacts/FINAL_USR_ABLATION.json",
+    "FINAL_COUNTERFACTUAL.json": "runs/final_artifacts/FINAL_COUNTERFACTUAL.json",
+    "FINAL_CONTRACT_AUDIT.json": "runs/final_artifacts/FINAL_CONTRACT_AUDIT.json",
+    "FINAL_MODEL_MANIFEST.json": "runs/final_artifacts/FINAL_MODEL_MANIFEST.json",
+    "FINAL_DA_LAYERED.json": "runs/final_artifacts/FINAL_DA_LAYERED.json",
+    "FINAL_SKILL_FRAMEWORK_AUDIT.md": "local reports/FINAL_SKILL_FRAMEWORK_AUDIT.md",
+    "PAPER_RESULT_TABLES.md": "local reports/PAPER_RESULT_TABLES.md"
+  },
+  "registry": "topconf_optimization_20260808T194903Z/EXPERIMENT_REGISTRY.csv",
+  "immutability": "Frozen results must not be modified/overwritten by any new experiment. New experiments use experiments/<name>/<version>/ with independent config/checkpoint/log/manifest."
+}
