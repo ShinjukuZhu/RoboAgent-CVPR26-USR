@@ -28,10 +28,12 @@
 ## 全量评测（EB50 + AW134, l10-35 adapter on 7B 主模型）
 | 评测 | SR | 对比冻结 |
 |------|-----|----------|
-| **EB50 base (n=50, 全量)** | **0.80** | Native 0.78 / Align 0.80 |
-| AW134 (n=134) | 运行中（完成后补） | AW134 Native 0.81 / Align 0.84 |
+| **EB50 base (n=50, 全量)** | **0.80** (40/50) | Native 0.78 / Align 0.80 |
+| **AW134 (n=134, 全量)** | **0.940** (126/134) | AW Native 0.81 / AW Align 0.84 |
 
 **EB50 全量确认**: l10-35 adapter SR 0.80（40/50），≥ Native 0.78 且持平 Align 0.80——**决策消费增强无 scheduler regression**。
+
+**AW134 全量重大发现**: l10-35 adapter SR **0.94**（126/134），较冻结 AW Align 0.84 **+10 点**——Brain 决策消费增强在 AW 上带来显著提升（非仅无 regression）。同配置同 seed（42），仅 Brain adapter 不同。
 
 ## 证据
 - checkpoints: brain_da_l10_35, brain_da_l0_35

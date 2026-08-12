@@ -60,9 +60,13 @@
 | l0-35 | 0.815 | 0.783 | 1.0 | - |
 | l20-35 (原) | 0.467 | 0.117 | 0.433 | - |
 
-**结论**: l10-35 是甜点区——fidelity 0.97（DA-full 97%）+ guard 全保留 + EB50 SR 0.80 全量无 regression（Native 0.78 / Align 0.80）。**原 da_layered (l20-35) 0.53 → 0.97 提升 44 点**。回答用户核心诉求 ✅
+**结论**: l10-35 是甜点区——fidelity 0.97（DA-full 97%）+ guard 全保留 + 全量评测无 regression 且有提升。**原 da_layered (l20-35) 0.53 → 0.97 提升 44 点**。回答用户核心诉求 ✅
 
-**证据**: brain_eval_*.json, eb50_brainl10-base/results.jsonl (SR 0.80), NEXT_STAGE_TASK3_REPORT.md
+**全量真实执行**:
+- **EB50 base (n=50)**: SR **0.80** (40/50) — 持平 Align 0.80，≥ Native 0.78（无 regression）
+- **AW134 (n=134)**: SR **0.940** (126/134) — 较冻结 AW Align 0.84 **+10 点**（同配置同 seed，仅 Brain adapter 不同）
+
+**证据**: brain_eval_*.json, eb50_brainl10-base/results.jsonl (SR 0.80), aw134 logs RESULT FOR TASK (SR 0.94), NEXT_STAGE_TASK3_REPORT.md
 
 ---
 
@@ -102,12 +106,11 @@
 ---
 
 ## 汇总
-- **5 任务全部 DONE**（T3/T4 的 AW134/3B-EB50 全量运行中，结果将补入）
-- **无冻结结果被覆盖**（EB50 Native 78/Naive 34/Align 80/USR 78/FullIndep 80 全部保留）
-- **负结果如实保留**（T1 数据瓶颈, T2 真实并行受限）
-- **新发现**: 分层 DA 甜点区 l10-35（T3 核心贡献）、3B scale-down 可行（T4）
+- **5 任务全部 DONE**（T3/T4 全量完成）
+- **无冻结结果被覆盖**（EB50 Native 78/Naive 34/Align 80/USR 78/FullIndep 80；AW134 Native 81/Align 84 全部保留）
+- **负结果如实保留**（T1 数据瓶颈, T2 真实并行受限, T4 3B 端到端不可行）
+- **新发现（主贡献）**: 分层 DA 甜点区 l10-35 —— AW134 SR **0.84→0.94** (+10 点全量), EB50 0.80 持平, fidelity 0.97 + guard 全保留（T3）
+- **次发现**: 3B 决策消费可行 (fidelity 0.92) 但端到端 skill 链未适配（T4）
 
 ## PENDING
-- AW134 7B 全量（运行中）
-- 3B EB50 全量（运行中）
-- 最终 commit + tag
+- 最终 commit + tag（AW134 结果已出，补入后提交）
