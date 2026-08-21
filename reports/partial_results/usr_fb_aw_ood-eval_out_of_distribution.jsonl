@@ -53,9 +53,80 @@
 {"task_idx": 52, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_52"}
 {"task_idx": 53, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_53"}
 {"task_idx": 54, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_54"}
+{"task_idx": 55, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_55"}
+{"task_idx": 56, "GCR": 0.3333333333333333, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_56"}
+{"task_idx": 57, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 58, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 59, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 60, "GCR": 0.5, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_60"}
+{"task_idx": 61, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
 {"task_idx": 62, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_62_70/run-eval_out_of_distribution/episode_62"}
+{"task_idx": 63, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 64, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_62_70/run-eval_out_of_distribution/episode_64"}
+{"task_idx": 65, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_62_70/run-eval_out_of_distribution/episode_65"}
+{"task_idx": 66, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_62_70/run-eval_out_of_distribution/episode_66"}
+{"task_idx": 67, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 68, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_62_70/run-eval_out_of_distribution/episode_68"}
+{"task_idx": 69, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_62_70/run-eval_out_of_distribution/episode_69"}
 {"task_idx": 70, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_shard_70_90/run-eval_out_of_distribution/episode_70"}
 {"task_idx": 71, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_shard_70_90/run-eval_out_of_distribution/episode_71"}
 {"task_idx": 72, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_shard_70_90/run-eval_out_of_distribution/episode_72"}
 {"task_idx": 73, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_shard_70_90/run-eval_out_of_distribution/episode_73"}
+{"task_idx": 74, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_74"}
+{"task_idx": 75, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_75"}
+{"task_idx": 76, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_76"}
+{"task_idx": 77, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_77"}
+{"task_idx": 78, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_78"}
+{"task_idx": 79, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_79"}
+{"task_idx": 80, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_80"}
+{"task_idx": 81, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_81"}
+{"task_idx": 82, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_82"}
+{"task_idx": 83, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_83"}
+{"task_idx": 84, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_84"}
+{"task_idx": 85, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_85"}
+{"task_idx": 86, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_86"}
+{"task_idx": 87, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_87"}
+{"task_idx": 88, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_88"}
+{"task_idx": 89, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_74_90/run-eval_out_of_distribution/episode_89"}
 {"task_idx": 90, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_shard_90_134/run-eval_out_of_distribution/episode_90"}
+{"task_idx": 91, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 92, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 93, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 94, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 95, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 96, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 97, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 98, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 99, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 100, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 101, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 102, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 103, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 104, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 105, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 106, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_91_134/run-eval_out_of_distribution/episode_106"}
+{"task_idx": 107, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 108, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 109, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 110, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 111, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 112, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 115, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 116, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_116"}
+{"task_idx": 117, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_117"}
+{"task_idx": 118, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_118"}
+{"task_idx": 119, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_119"}
+{"task_idx": 120, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 121, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 122, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_122"}
+{"task_idx": 123, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_123"}
+{"task_idx": 124, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_124_134/run-eval_out_of_distribution/episode_124"}
+{"task_idx": 125, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 126, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 127, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 128, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 129, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_124_134/run-eval_out_of_distribution/episode_129"}
+{"task_idx": 130, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 131, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_124_134/run-eval_out_of_distribution/episode_131"}
+{"task_idx": 132, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_124_134/run-eval_out_of_distribution/episode_132"}
+{"task_idx": 133, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_124_134/run-eval_out_of_distribution/episode_133"}

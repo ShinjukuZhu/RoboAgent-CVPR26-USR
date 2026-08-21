@@ -1,27 +1,32 @@
-# Fallback results (EB + SkillOpt sealed; AW OOD finishing under GPU contention)
+# Fallback results (EB + SkillOpt sealed; AW blocked on GPU)
 
 **Run root:** `/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt`  
 **Branch:** `research/fallback-usr-skillopt`  
 **Survey:** `reports/FALLBACK_MIN_STANDARD.md`
 
-## Sealed
+## Sealed (verified)
 
 | Split | n | SR | vs baseline |
 |---|---:|---:|---|
 | EB-ALFRED base | **50 / 50** | **0.84** | Align+USR 0.78 ✓ / Align 0.80 ✓ |
-| SkillOpt D_sel | 20 / 20 | 0.75 | round-1 **REJECT** (keep skill_v0000) |
+| SkillOpt D_tr | 20 / 20 | 0.65 | development |
+| SkillOpt D_sel v0 | 20 / 20 | 0.75 | held-out gate |
+| SkillOpt round-1 | — | **REJECT** | keep `skill_v0000`; history sealed |
 
-## AW OOD (live)
+## AW OOD (incomplete — GPU contention)
 
 | Metric | Value |
 |---|---|
-| Coverage | **132 / 134** (missing 113–114) |
-| Current SR | **~0.61** (depressed by hang-timeout stubs) |
-| Next | `aw_reeval_when_free.sh` waits for ≥32GB free GPU, finishes gaps, then promote-only fail reeval |
+| Coverage | **132 / 134** (missing **113, 114**) |
+| SR so far | **0.6061** (35+ hang stubs depressed the score) |
+| Blocker | Lab GPUs saturated; need ≥50 GiB free for RoboAgent load |
+| Waiter | `training/aw_reeval_when_free.sh` polling; then finish gaps + promote-only fail reeval |
 
-Lab GPUs are saturated by other train jobs; parallel reeval hit CUDA OOM. Serial when-free path avoids fighting V2/neighbors.
+## Skill landed on USR
 
-## Skill contracts
+- `invalidate_perception_after_world_change`, `invalidate_stale_suffix`, `verify_grounded_object`
+- `block_nonpickupable_take` (also blocks heat/clean/cool/slice of appliances)
+- SkillOpt strict held-out SR gate (`training/skillopt_evolve.py`)
 
-- OpenETA perception invalidation, MineEvolve suffix freeze, EmbodiSkill grounding
-- `block_nonpickupable_take` (+ heat/clean/cool/slice of appliances)
+Do not treat AW as sealed until 134/134 and post-reeval SR are written by
+`wait_and_finalize.sh` → `FALLBACK_FINAL_RESULTS.md`.
