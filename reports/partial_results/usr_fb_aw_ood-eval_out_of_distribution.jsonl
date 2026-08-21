@@ -49,3 +49,5 @@
 {"task_idx": 48, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_48"}
 {"task_idx": 49, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_49"}
 {"task_idx": 50, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_50"}
+{"task_idx": 70, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_shard_70_90/run-eval_out_of_distribution/episode_70"}
+{"task_idx": 51, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_51"}

@@ -113,8 +113,19 @@ official = {
 }
 (root / "runtime_state.json").write_text(json.dumps(official, ensure_ascii=False, indent=2) + "\n")
 (root / "runtime_state.partial.json").write_text(json.dumps({**official, "partial": False}, ensure_ascii=False, indent=2) + "\n")
-print(json.dumps({"decision": decision, "current_SR": cur_sr, "candidate_SR": cand_sr, "history_n": len(history)}, indent=2))
+    print(json.dumps({"decision": decision, "current_SR": cur_sr, "candidate_SR": cand_sr, "history_n": len(history)}, indent=2))
 PY
+    # Free GPU4 for the AW mid-range gap (52-70) that only the slow main worker covers.
+    if [ ! -S /tmp/.X11-unix/X94 ]; then
+      /mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb :94 -screen 0 1280x1024x24 -ac +extension GLX +render -noreset >/dev/null 2>&1 &
+      sleep 2
+    fi
+    if ! pgrep -f 'usr_fb_aw_ood_shard_52_70' >/dev/null; then
+      echo "$(date -Is) launching AW shard 52-70 on freed GPU4" | tee -a "$LOG"
+      nohup env GPU=4 DISPLAY_NUM=94 START=52 END=70 \
+        bash "$CODE/training/aw_ood_parallel_shard.sh" \
+        >> "$RUN/logs/aw_ood_shard_52_70.log" 2>&1 &
+    fi
     exit 0
   fi
   sleep 90
