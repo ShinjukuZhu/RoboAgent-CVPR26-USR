@@ -53,6 +53,12 @@ PY
   aw_sr=$(echo "$ready" | sed -n '5p')
   echo "$(date -Is) aw_n=$aw_n eb_n=$eb_n hist=$hist aw_sr=$aw_sr ready=$ready_flag" | tee -a "$LOG"
   if [ "$ready_flag" = "1" ]; then
+    if [ ! -f "$RUN/aw_fail_reeval_summary.json" ]; then
+      echo "$(date -Is) running fail reeval before finalize" | tee -a "$LOG"
+      # Prefer a free GPU; default GPU4/DISPLAY94
+      GPU=${REEVAL_GPU:-4} DISPLAY_NUM=${REEVAL_DISPLAY:-94} \
+        bash "$CODE/training/aw_fail_reeval.sh" | tee -a "$LOG" || true
+    fi
     bash "$CODE/training/finalize_fallback_results.sh" | tee -a "$LOG"
     echo "$(date -Is) FINALIZED" | tee -a "$LOG"
     exit 0
