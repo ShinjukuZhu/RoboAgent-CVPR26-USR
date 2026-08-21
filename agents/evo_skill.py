@@ -465,7 +465,16 @@ class EffectVerifiedSkill:
 
     @staticmethod
     def _is_referential_target(target: str) -> bool:
-        text = re.sub(r"\([^)]*\)", " ", str(target or "").lower())
+        raw = str(target or "").strip().lower()
+        if not raw:
+            return False
+        # Effect predicates must never be treated as object class requests.
+        if re.match(
+            r"^(open|closed|holding|placed|at|on|off|clean|heated|cooled|sliced)\(",
+            raw,
+        ):
+            return False
+        text = re.sub(r"\([^)]*\)", " ", raw)
         text = re.sub(r"\s+", " ", text).strip()
         if not text:
             return False
@@ -477,8 +486,6 @@ class EffectVerifiedSkill:
             # Location phrases are role hints, not hard class IDs.
             r"^(on|in|at|near|under|onto|into)\b",
             r"\b(on|in|at)\s+the\s+(table|counter|shelf|floor|ground)\b",
-            # Effect predicates must never be treated as object class requests.
-            r"^(open|closed|holding|placed|at|on|off|clean|heated|cooled|sliced)\(",
         )
         return not any(re.search(pattern, text) for pattern in abstract)
 
