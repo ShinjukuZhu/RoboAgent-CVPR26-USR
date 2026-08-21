@@ -12,10 +12,12 @@ EB_DATA=$EB_ROOT/embodiedbench/envs/eb_alfred/data/splits/splits.json
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
 GPU=${GPU:-5}
 DISPLAY_NUM=${DISPLAY_NUM:-97}
+START=${START:-0}
+END=${END:-50}
 mkdir -p "$RUN/logs"
 cd "$CODE"
 LOG=$RUN/logs/eb50_skill.log
-: > "$LOG"
+touch "$LOG"
 export FALLBACK_USR_SKILLOPT_AUTHORIZED=1
 nohup env -u LD_LIBRARY_PATH \
   CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM PATH=$ENV_BIN:$PATH \
@@ -30,9 +32,9 @@ nohup env -u LD_LIBRARY_PATH \
   ROBOAGENT_LLMDET_THRESHOLD=0.35 \
   ROBOAGENT_EVO_SKILL=$SKILL \
   python -u run_ebalf.py --qwen_path "$CKPT" \
-    --save_path "$RUN/official_eb50" \
+    --save_path "$RUN/usr_fb_eb50" \
     --data_path "$EB_DATA" --split base --server-num "$DISPLAY_NUM" \
-    --start 0 --end 50 --seed 42 \
-  > "$LOG" 2>&1 &
+    --start "$START" --end "$END" --seed 42 \
+  >> "$LOG" 2>&1 &
 echo $! > "$RUN/eb50_skill.pid"
-echo "EB_PID=$(cat $RUN/eb50_skill.pid) GPU=$GPU DISPLAY=:$DISPLAY_NUM LOG=$LOG"
+echo "EB_PID=$(cat $RUN/eb50_skill.pid) GPU=$GPU START=$START END=$END DISPLAY=:$DISPLAY_NUM LOG=$LOG"

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Official AW OOD (n=134), Align+USR + effect-verified Skill.
 # Independent of RoboAgent-Evo V2. Does NOT require V2_FROZEN.json.
+# Save dir uses usr_fb_* prefix so V2 freeze/quarantine scripts do not target it.
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
 CODE=${CODE:-$ROOT/code/RoboAgent_USR_SkillOpt}
@@ -10,12 +11,13 @@ ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
 GPU=${GPU:-0}
 DISPLAY_NUM=${DISPLAY_NUM:-96}
+START=${START:-0}
+END=${END:-134}
 ALFWORLD_DATA=${ALFWORLD_DATA:-$ROOT/data/alfworld}
 mkdir -p "$RUN/logs"
 cd "$CODE"
 LOG=$RUN/logs/aw_ood_skill.log
-: > "$LOG"
-# Explicit opt-out of V2 sealed-eval latch; this branch is the USR fallback.
+touch "$LOG"
 export FALLBACK_USR_SKILLOPT_AUTHORIZED=1
 nohup env -u LD_LIBRARY_PATH \
   CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM ALFWORLD_DATA=$ALFWORLD_DATA PATH=$ENV_BIN:$PATH \
@@ -29,8 +31,8 @@ nohup env -u LD_LIBRARY_PATH \
   ROBOAGENT_LLMDET_THRESHOLD=0.35 \
   ROBOAGENT_EVO_SKILL=$SKILL \
   python -u run_aw.py --qwen_path "$CKPT" \
-    --save_path "$RUN/official_aw_ood" \
-    --split eval_out_of_distribution --start 0 --end 134 --seed 42 \
-  > "$LOG" 2>&1 &
+    --save_path "$RUN/usr_fb_aw_ood" \
+    --split eval_out_of_distribution --start "$START" --end "$END" --seed 42 \
+  >> "$LOG" 2>&1 &
 echo $! > "$RUN/aw_ood_skill.pid"
-echo "AW_PID=$(cat $RUN/aw_ood_skill.pid) GPU=$GPU DISPLAY=:$DISPLAY_NUM LOG=$LOG"
+echo "AW_PID=$(cat $RUN/aw_ood_skill.pid) GPU=$GPU START=$START END=$END DISPLAY=:$DISPLAY_NUM LOG=$LOG"
