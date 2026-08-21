@@ -111,6 +111,8 @@
 {"task_idx": 110, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
 {"task_idx": 111, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
 {"task_idx": 112, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
+{"task_idx": 113, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/aw_fail_reeval_free/task_113-eval_out_of_distribution/episode_113"}
+{"task_idx": 114, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/aw_fail_reeval_free/task_114/run-eval_out_of_distribution/episode_114"}
 {"task_idx": 115, "SR": 0, "success": false, "error": "timeout_or_hang", "note": "aw_range_watchdog stub"}
 {"task_idx": 116, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_116"}
 {"task_idx": 117, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood_wd_tail_115_124/run-eval_out_of_distribution/episode_117"}
