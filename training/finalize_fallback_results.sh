@@ -25,6 +25,14 @@ def load(p):
     return [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
 
 aw_rows, eb_rows, sk_rows = load(aw), load(eb), load(sk)
+
+def dedupe(rows):
+    by = {}
+    for r in rows:
+        by[int(r["task_idx"])] = r
+    return [by[i] for i in sorted(by)]
+
+aw_rows, eb_rows, sk_rows = dedupe(aw_rows), dedupe(eb_rows), dedupe(sk_rows)
 aw_ok = [int(r["task_idx"]) for r in aw_rows] == list(range(134))
 eb_ok = [int(r["task_idx"]) for r in eb_rows] == list(range(50))
 def sr(rows):
