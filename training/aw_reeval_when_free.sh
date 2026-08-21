@@ -70,6 +70,8 @@ else:
 PY
 )
   local out=$RUN/aw_fail_reeval_free/task_${tid}
+  # run_aw.py appends "-{split}" to --save_path, so pass ".../run" → ".../run-eval_out_of_distribution".
+  mkdir -p "$out"
   echo "$(date -Is) GPU$gpu run task $tid ($tag) free=${free_mib}MiB max_gpu=${free_mib}" | tee -a "$LOG"
   cd "$CODE"
   set +e
@@ -84,7 +86,7 @@ PY
     ROBOAGENT_LLMDET_PATH=$ROOT/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 \
     ROBOAGENT_EVO_SKILL=$SKILL \
     timeout "$TIMEOUT_SEC" python -u run_aw.py --qwen_path "$ROOT/ckpt/RoboAgent_CVPR26" \
-      --save_path "$out" --split eval_out_of_distribution \
+      --save_path "$out/run" --split eval_out_of_distribution \
       --start "$tid" --end $((tid+1)) --seed 42 \
     >> "$LOG" 2>&1
   local rc=$?
@@ -93,17 +95,25 @@ PY
 import json
 from pathlib import Path
 tid=int("$tid"); tag="$tag"; rc=int("$rc")
-cand=Path("$out/run-eval_out_of_distribution/results.jsonl")
+out=Path("$out")
+cands=[
+    out/"run-eval_out_of_distribution"/"results.jsonl",
+    Path(str(out)+"-eval_out_of_distribution")/"results.jsonl",  # legacy mistaken path
+]
 main=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/results.jsonl")
 summary=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/aw_fail_reeval_free/summary.jsonl")
 summary.parent.mkdir(parents=True, exist_ok=True)
 row=None
-if cand.exists():
+for cand in cands:
+    if not cand.exists():
+        continue
     for line in cand.read_text().splitlines():
         if line.strip():
             r=json.loads(line)
             if int(r["task_idx"])==tid:
                 row=r; break
+    if row is not None:
+        break
 rec={"task_idx": tid, "tag": tag, "rc": rc, "SR": None, "promoted": False}
 if row is not None:
     rec["SR"]=int(row.get("SR") or 0)
@@ -120,7 +130,6 @@ if row is not None:
         rec["promoted"]= bool(tag=="finish" or rec["SR"]==1)
         print("WROTE", tid, "SR", rec["SR"], "promoted", rec["promoted"])
     elif tag=="finish" and tid not in rows:
-        # finish failed: write stub so unique set can complete
         rows[tid]={"task_idx": tid, "SR": 0, "success": False, "error": "timeout_or_hang", "note": "finish_stub"}
         main.write_text("".join(json.dumps(rows[i], ensure_ascii=False)+"\n" for i in sorted(rows)))
         print("STUBBED finish", tid)
