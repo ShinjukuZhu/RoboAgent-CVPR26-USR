@@ -9,8 +9,8 @@ ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 EB_ROOT=$ROOT/code/EmbodiedBench
 EB_DATA=$EB_ROOT/embodiedbench/envs/eb_alfred/data/splits/splits.json
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
-GPU=${GPU:-3}
-DISPLAY_NUM=${DISPLAY_NUM:-103}
+GPU=${GPU:-5}
+DISPLAY_NUM=${DISPLAY_NUM:-97}
 mkdir -p "$RUN/logs"
 cd "$CODE"
 LOG=$RUN/logs/eb50_skill.log

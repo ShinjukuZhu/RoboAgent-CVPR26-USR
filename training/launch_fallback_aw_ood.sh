@@ -8,14 +8,15 @@ CKPT=$ROOT/ckpt/RoboAgent_CVPR26
 RUN=$ROOT/runs/fallback_usr_skillopt
 ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
-GPU=${GPU:-2}
-DISPLAY_NUM=${DISPLAY_NUM:-102}
+GPU=${GPU:-0}
+DISPLAY_NUM=${DISPLAY_NUM:-96}
+ALFWORLD_DATA=${ALFWORLD_DATA:-$ROOT/data/alfworld}
 mkdir -p "$RUN/logs"
 cd "$CODE"
 LOG=$RUN/logs/aw_ood_skill.log
 : > "$LOG"
 nohup env -u LD_LIBRARY_PATH \
-  CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM PATH=$ENV_BIN:$PATH \
+  CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM ALFWORLD_DATA=$ALFWORLD_DATA PATH=$ENV_BIN:$PATH \
   PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
   ROBOAGENT_OG_BACKEND=llmdet_qwen_usr \
   ROBOAGENT_EG_BACKEND=qwen \
