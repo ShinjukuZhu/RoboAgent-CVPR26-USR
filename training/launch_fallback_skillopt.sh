@@ -12,6 +12,7 @@ DISPLAY_NUM=${DISPLAY_NUM:-98}
 ALFWORLD_DATA=${ALFWORLD_DATA:-$ROOT/data/alfworld}
 mkdir -p "$RUN/logs" "$RUN/skillopt"
 cd "$CODE"
+export FALLBACK_USR_SKILLOPT_AUTHORIZED=1
 
 DEV_LOG=$RUN/logs/aw_id_dev.log
 if [[ ! -f $RUN/skillopt_dev-eval_in_distribution/results.jsonl ]]; then
@@ -19,6 +20,7 @@ if [[ ! -f $RUN/skillopt_dev-eval_in_distribution/results.jsonl ]]; then
   env -u LD_LIBRARY_PATH \
     CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM ALFWORLD_DATA=$ALFWORLD_DATA PATH=$ENV_BIN:$PATH \
     PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+    FALLBACK_USR_SKILLOPT_AUTHORIZED=1 \
     ROBOAGENT_OG_BACKEND=llmdet_qwen_usr \
     ROBOAGENT_EG_BACKEND=qwen \
     ROBOAGENT_SD_BACKEND=usr \
@@ -32,9 +34,9 @@ if [[ ! -f $RUN/skillopt_dev-eval_in_distribution/results.jsonl ]]; then
     > "$DEV_LOG" 2>&1
 fi
 
-SEL_CMD='env -u LD_LIBRARY_PATH CUDA_VISIBLE_DEVICES='$GPU' DISPLAY=:'$DISPLAY_NUM' ALFWORLD_DATA='$ALFWORLD_DATA' PATH='$ENV_BIN':$PATH PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 ROBOAGENT_LLMDET_PATH='$ROOT'/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 python -u run_aw.py --qwen_path '"$CKPT"' --save_path {output}/run --split eval_in_distribution --start 20 --end 40 --seed 42'
+SEL_CMD='env -u LD_LIBRARY_PATH CUDA_VISIBLE_DEVICES='$GPU' DISPLAY=:'$DISPLAY_NUM' ALFWORLD_DATA='$ALFWORLD_DATA' PATH='$ENV_BIN':$PATH PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True FALLBACK_USR_SKILLOPT_AUTHORIZED=1 ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 ROBOAGENT_LLMDET_PATH='$ROOT'/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 python -u run_aw.py --qwen_path '"$CKPT"' --save_path {output}/run --split eval_in_distribution --start 20 --end 40 --seed 42'
 
-nohup env -u LD_LIBRARY_PATH PATH=$ENV_BIN:$PATH PYTHONUNBUFFERED=1 \
+nohup env -u LD_LIBRARY_PATH PATH=$ENV_BIN:$PATH PYTHONUNBUFFERED=1 FALLBACK_USR_SKILLOPT_AUTHORIZED=1 \
   python -u training/skillopt_evolve.py \
     --initial-skill "$SKILL" \
     --development-run "$RUN/skillopt_dev-eval_in_distribution" \

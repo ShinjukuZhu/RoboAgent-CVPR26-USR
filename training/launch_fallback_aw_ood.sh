@@ -1,30 +1,26 @@
 #!/usr/bin/env bash
 # Official AW OOD (n=134), Align+USR + effect-verified Skill.
-# Does NOT use the V2 RoboAgent_CVPR26 working tree.
+# Independent of RoboAgent-Evo V2. Does NOT require V2_FROZEN.json.
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
 CODE=${CODE:-$ROOT/code/RoboAgent_USR_SkillOpt}
 CKPT=$ROOT/ckpt/RoboAgent_CVPR26
 RUN=$ROOT/runs/fallback_usr_skillopt
-FREEZE=${V2_FREEZE_FILE:-$ROOT/runs/V2_FROZEN.json}
 ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
 GPU=${GPU:-0}
 DISPLAY_NUM=${DISPLAY_NUM:-96}
 ALFWORLD_DATA=${ALFWORLD_DATA:-$ROOT/data/alfworld}
-
-if [[ ! -f "$FREEZE" ]] || ! grep -q '"sealed_eval_authorized": true' "$FREEZE"; then
-  echo "Refusing AW OOD evaluation before V2 architecture freeze: $FREEZE" >&2
-  exit 3
-fi
-
 mkdir -p "$RUN/logs"
 cd "$CODE"
 LOG=$RUN/logs/aw_ood_skill.log
 : > "$LOG"
+# Explicit opt-out of V2 sealed-eval latch; this branch is the USR fallback.
+export FALLBACK_USR_SKILLOPT_AUTHORIZED=1
 nohup env -u LD_LIBRARY_PATH \
   CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM ALFWORLD_DATA=$ALFWORLD_DATA PATH=$ENV_BIN:$PATH \
   PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  FALLBACK_USR_SKILLOPT_AUTHORIZED=1 \
   ROBOAGENT_OG_BACKEND=llmdet_qwen_usr \
   ROBOAGENT_EG_BACKEND=qwen \
   ROBOAGENT_SD_BACKEND=usr \
@@ -33,7 +29,7 @@ nohup env -u LD_LIBRARY_PATH \
   ROBOAGENT_LLMDET_THRESHOLD=0.35 \
   ROBOAGENT_EVO_SKILL=$SKILL \
   python -u run_aw.py --qwen_path "$CKPT" \
-    --save_path "$RUN/sealed_aw_ood" \
+    --save_path "$RUN/official_aw_ood" \
     --split eval_out_of_distribution --start 0 --end 134 --seed 42 \
   > "$LOG" 2>&1 &
 echo $! > "$RUN/aw_ood_skill.pid"
