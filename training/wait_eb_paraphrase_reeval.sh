@@ -19,7 +19,9 @@ PY
   complete=$(echo "$n" | sed -n '2p')
   echo "$(date -Is) eb_unique=$unique complete=$complete" >> "$RUN/logs/eb_reeval_waiter.log"
   if [ "${complete:-0}" -eq 1 ]; then
-    if pgrep -f "runs/usr_minstd_skillopt/usr_fb_eb50 " >/dev/null || pgrep -f "eb_skip44_finish.sh" >/dev/null; then
+    if pgrep -f "runs/usr_minstd_skillopt/usr_fb_eb50 " >/dev/null \
+      || pgrep -f "eb_finish_missing.sh" >/dev/null \
+      || pgrep -f "eb_skip44_finish.sh" >/dev/null; then
       echo "$(date -Is) waiting main EB exit" >> "$RUN/logs/eb_reeval_waiter.log"
       sleep 60
       continue

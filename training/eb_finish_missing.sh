@@ -36,10 +36,36 @@ PY
 echo "plan: $ORDER"
 TASKS=$(echo "$ORDER" | head -1)
 
+record_timeout_fail() {
+  local tid=$1
+  "$ENV_BIN/python" - <<PY
+import json
+from pathlib import Path
+tid=int("$tid")
+main=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_eb50-base/results.jsonl")
+rows={}
+if main.exists():
+    for line in main.read_text().splitlines():
+        if not line.strip():
+            continue
+        r=json.loads(line)
+        rows[int(r["task_idx"])]=r
+if tid in rows:
+    print(f"task {tid} already present; skip fail stub")
+else:
+    stub={"task_idx": tid, "SR": 0, "success": False, "error": "timeout_or_hang", "note": "recorded by eb_finish_missing after per-task timeout"}
+    with main.open("a") as f:
+        f.write(json.dumps(stub, ensure_ascii=False)+"\n")
+    print(f"wrote fail stub for task {tid}")
+PY
+}
+
 launch_one() {
   local tid=$1
+  local rc=0
   echo "$(date -Is) EB single task $tid" | tee -a "$LOG"
   cd "$CODE"
+  set +e
   env -u LD_LIBRARY_PATH \
     CUDA_VISIBLE_DEVICES=3 DISPLAY=:99 PATH=$ENV_BIN:$PATH \
     PYTHONPATH=$EB_ROOT:${PYTHONPATH:-} PYTHONUNBUFFERED=1 \
@@ -53,7 +79,24 @@ launch_one() {
       --save_path "$RUN/usr_fb_eb50" \
       --data_path "$EB_ROOT/embodiedbench/envs/eb_alfred/data/splits/splits.json" \
       --split base --server-num 99 --start "$tid" --end $((tid+1)) --seed 42 \
-      >> "$LOG" 2>&1 || echo "$(date -Is) task $tid timed out/failed launch" | tee -a "$LOG"
+      >> "$LOG" 2>&1
+  rc=$?
+  set -e
+  # 124 = GNU timeout; also cover crash-without-row
+  have=$("$ENV_BIN/python" - <<PY
+import json
+from pathlib import Path
+p=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_eb50-base/results.jsonl")
+ids={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()} if p.exists() else set()
+print(int($tid in ids))
+PY
+)
+  if [ "$have" != "1" ]; then
+    echo "$(date -Is) task $tid missing after exit=$rc; writing fail stub" | tee -a "$LOG"
+    record_timeout_fail "$tid"
+  elif [ "$rc" -ne 0 ]; then
+    echo "$(date -Is) task $tid exit=$rc but row present" | tee -a "$LOG"
+  fi
 }
 
 for tid in $TASKS; do
