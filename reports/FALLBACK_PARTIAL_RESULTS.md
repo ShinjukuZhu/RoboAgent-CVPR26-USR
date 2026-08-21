@@ -4,11 +4,10 @@ Server: `/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt` (`usr_fb_*`).
 
 | Split | n / target | SR so far |
 |---|---|---|
-| AW OOD | 6 / 134 | 1.000 |
-| EB base | 20 / 50 | 0.750 |
-| SkillOpt D_tr | 10 / 20 | 0.700 |
+| AW OOD | 14 / 134 | 0.857 |
+| EB base | 26 / 50 | 0.731 |
+| SkillOpt D_tr | 14 / 20 | 0.643 |
 
 References: Align AW 0.84 / EB 0.80; Align+USR EB 0.78; Native AW 0.81 / EB 0.78.
 
-Early EB fails 1 & 7 were pre–table-paraphrase Skill; post-fix episodes continue under fixed aliases.
-SkillOpt waiter + finalize hooks are live; V2 jobs untouched.
+Three sealed jobs remain healthy; SkillOpt waiter armed for D_tr≥20.

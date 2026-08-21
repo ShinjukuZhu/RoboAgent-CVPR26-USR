@@ -6,3 +6,9 @@
 {"task_idx": 5, "GCR": 0.5, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/skillopt_dev-eval_in_distribution/episode_5"}
 {"task_idx": 6, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/skillopt_dev-eval_in_distribution/episode_6"}
 {"task_idx": 7, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_7"}
+{"task_idx": 8, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_8"}
+{"task_idx": 9, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_9"}
+{"task_idx": 10, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_10"}
+{"task_idx": 11, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_11"}
+{"task_idx": 12, "GCR": 0.5, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_12"}
+{"task_idx": 13, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_13"}

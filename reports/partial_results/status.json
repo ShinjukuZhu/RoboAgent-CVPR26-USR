@@ -1,27 +1,83 @@
 {
-  "ts": 1787297459.4590652,
+  "ts": 1787299169.8039165,
   "runs": {
-    "official_aw_ood-eval_out_of_distribution": {
-      "n": 0,
+    "usr_fb_aw_ood-eval_out_of_distribution": {
+      "n": 13,
       "need": 134,
-      "SR": null,
-      "task_ids": [],
+      "SR": 0.8461538461538461,
+      "task_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
       "dups": 0,
       "complete": false
     },
-    "official_eb50-base": {
-      "n": 0,
+    "usr_fb_eb50-base": {
+      "n": 26,
       "need": 50,
-      "SR": null,
-      "task_ids": [],
+      "SR": 0.7307692307692307,
+      "task_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
       "dups": 0,
       "complete": false
     },
-    "skillopt_dev-eval_in_distribution": {
-      "n": 0,
+    "usr_fb_skillopt_dev-eval_in_distribution": {
+      "n": 14,
       "need": 20,
-      "SR": null,
-      "task_ids": [],
+      "SR": 0.6428571428571429,
+      "task_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
       "dups": 0,
       "complete": false
     }
