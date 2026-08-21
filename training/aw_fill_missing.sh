@@ -28,15 +28,18 @@ p=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_o
 ids={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()} if p.exists() else set()
 # Prefer mid-gap first; shards cover 70+ / 90+.
 prefer=[i for i in range(52, 70) if i not in ids]
-rest=[i for i in range(134) if i not in ids and i not in prefer and not (70 <= i < 90) and not (90 <= i < 134)]
-# If shards die, still allow filling 70+ later:
-later=[i for i in range(70, 134) if i not in ids]
-print(" ".join(str(i) for i in prefer + rest + later))
+# Live shards own 70–134; only fill the mid-gap here.
+print(" ".join(str(i) for i in prefer))
 print("unique", len(ids), "prefer", prefer)
 PY
 )
 echo "plan: $TASKS" | tee -a "$LOG"
 ORDER=$(echo "$TASKS" | head -1)
+
+if [ -z "${ORDER// }" ]; then
+  echo "no mid-gap tasks left" | tee -a "$LOG"
+  exit 0
+fi
 
 for tid in $ORDER; do
   have=$("$ENV_BIN/python" - <<PY
