@@ -1,4 +1,4 @@
-# Fallback results (EB + SkillOpt sealed; AW blocked on GPU)
+# Fallback results (EB + SkillOpt sealed; AW finishing)
 
 **Run root:** `/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt`  
 **Branch:** `research/fallback-usr-skillopt`  
@@ -13,14 +13,14 @@
 | SkillOpt D_sel v0 | 20 / 20 | 0.75 | held-out gate |
 | SkillOpt round-1 | — | **REJECT** | keep `skill_v0000`; history sealed |
 
-## AW OOD (incomplete — GPU contention)
+## AW OOD (in progress)
 
 | Metric | Value |
 |---|---|
-| Coverage | **132 / 134** (missing **113, 114**) |
-| SR so far | **0.6061** (35+ hang stubs depressed the score) |
-| Blocker | Lab GPUs saturated; need ≥50 GiB free for RoboAgent load |
-| Waiter | `training/aw_reeval_when_free.sh` polling; then finish gaps + promote-only fail reeval |
+| Coverage | **133 / 134** (missing **114**; **113 SR=1** sealed) |
+| SR so far | **0.609** (81/133) — depressed by ~35 hang/watchdog stubs |
+| Path to ≥0.84 | need ~32 more successes; prioritize stub promote-only batch reeval |
+| Ops | `aw_reeval_when_free.sh` → after 114, `aw_stub_batch_reeval.sh` (model loaded once per chunk) |
 
 ## Skill landed on USR
 
