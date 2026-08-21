@@ -4,11 +4,11 @@
 
 | Split | n / target | SR so far | Notes |
 |---|---|---|---|
-| AW OOD | ~41 / 134 | ~0.829 | approaching Align 0.84 |
-| EB base | 48 unique / 50 | 0.729 | 48/49 done (SR=1); running stuck 44 then 47 (30m timeout → fail stub) |
+| AW OOD | ~42 / 134 | ~0.83 | running |
+| EB base | **50 / 50** | **0.70** | sealed (44 Thor hang + 47 put-loop stubbed); paraphrase reeval on GPU6 in progress |
 | SkillOpt D_tr | 20 / 20 | 0.650 | done |
-| SkillOpt D_sel | ~14 / 20 | ~0.714 | baseline skill eval in progress |
+| SkillOpt D_sel | ~15 / 20 | ~0.71 | baseline skill eval |
 
-Landed: survey + USR Skill + SkillOpt gate + finish-missing + keep-alive marker. Pending: seal AW134/EB50 + paraphrase reeval + history + final md.
+Landed: survey + USR Skill + SkillOpt gate + grounding paraphrase hotfix + early reeval. Pending: reeval splice → EB ≥0.78 target; AW134; SkillOpt history; final md.
 
 Refs: Align AW 0.84 / EB 0.80; Align+USR EB 0.78.
