@@ -18,6 +18,10 @@ def load(p):
     return [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
 aw_rows, eb_rows = load(aw), load(eb)
 
+# Merge any parallel AW OOD shards before the completeness check.
+for shard in sorted(root.glob("usr_fb_aw_ood_shard_*/run-eval_out_of_distribution/results.jsonl")):
+    aw_rows.extend(load(shard))
+
 def dedupe(rows):
     by = {}
     for r in rows:
@@ -25,6 +29,9 @@ def dedupe(rows):
     return [by[i] for i in sorted(by)]
 
 aw_rows, eb_rows = dedupe(aw_rows), dedupe(eb_rows)
+# Persist merged AW so other waiters see the sealed file.
+if aw_rows:
+    aw.write_text("".join(__import__("json").dumps(r, ensure_ascii=False) + "\n" for r in aw_rows))
 aw_ids = [int(r["task_idx"]) for r in aw_rows]
 eb_ids = [int(r["task_idx"]) for r in eb_rows]
 ready = aw_ids == list(range(134)) and eb_ids == list(range(50))
