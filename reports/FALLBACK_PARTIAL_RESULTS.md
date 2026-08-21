@@ -19,8 +19,8 @@ paraphrase reeval on false-reject fails (`eb_paraphrase_reeval_summary.json`).
 
 | Track | Status |
 |---|---|
-| AW OOD | ~53 / 134 @ ~0.75; main + shards 70–90 / 90–134 |
-| SkillOpt evolution | round-1 candidate (`miss_limit` 2→3) ~14/20; sealer will write ACCEPT/REJECT history |
+| AW OOD | **59 / 134 @ 0.76**; hang-safe fill 54–69 (GPU1); shard 70–90 (GPU7); hang-safe 90–134 (GPU6) |
+| SkillOpt evolution | round-1 candidate (`miss_limit` 2→3) **15/20 @ 0.67**; sealer writes ACCEPT/REJECT when 20–39 complete |
 
 ## Skill contracts landed on USR
 
@@ -28,6 +28,12 @@ paraphrase reeval on false-reject fails (`eb_paraphrase_reeval_summary.json`).
 - `invalidate_stale_suffix` + confirmed progress (MineEvolve-style)
 - `verify_grounded_object` + receptacle paraphrases (EmbodiSkill-style)
 - SkillOpt strict held-out SR gate (`training/skillopt_evolve.py`)
+
+## Ops notes
+
+- Continuous long-range AW workers can put-loop; `aw_fill_missing.sh` /
+  `aw_shard_fill_tasks.sh` fill one task with timeout + SR=0 stub.
+- Authoritative run dir is marked `USR_MINSTD_DO_NOT_TOUCH.json` (keep-alive).
 
 Final sealed AW134 + `history.jsonl` will replace this note via
 `training/finalize_fallback_results.sh` → `FALLBACK_FINAL_RESULTS.md`.
