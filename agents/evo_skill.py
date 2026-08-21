@@ -257,6 +257,8 @@ class EvoSkillSpec:
             "grounding_contract_mode": self.grounding_contract_mode,
             "skip_feedback_mode": self.skip_feedback_mode,
             "invalidate_perception_after_world_change": self.invalidate_perception_after_world_change,
+            # Preserve instruction paraphrases across SkillOpt candidate writes.
+            "aliases": dict(self.aliases),
         }
 
 

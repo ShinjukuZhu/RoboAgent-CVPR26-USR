@@ -85,6 +85,10 @@ def write_partial_state(output: Path, current: Path, history: List[Dict[str, Any
     (output / "runtime_state.partial.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
     )
+    # SkillOpt decision log expected by finalize / keep-alive.
+    (output / "history.jsonl").write_text(
+        "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in history)
+    )
 
 
 def write_infrastructure_error(output: Path, round_idx: int, stage: str, exc: Exception) -> None:
@@ -523,6 +527,9 @@ def main():
         "selection_n": current_sel["n"],
     }
     official.write_text(json.dumps(official_state, ensure_ascii=False, indent=2) + "\n")
+    (args.output / "history.jsonl").write_text(
+        "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in history)
+    )
     print(json.dumps(official_state, ensure_ascii=False, indent=2))
 
 

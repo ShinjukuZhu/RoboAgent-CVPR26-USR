@@ -50,9 +50,24 @@ for src, name in [(aw, "usr_fb_aw_ood.jsonl"), (eb, "usr_fb_eb50.jsonl"), (sk, "
     if src.exists():
         shutil.copy2(src, partial / name)
 hist = skillopt / "history.jsonl"
+if not hist.exists():
+    # Older runs stored decisions only inside runtime_state*.json.
+    for cand in (skillopt / "runtime_state.json", skillopt / "runtime_state.partial.json"):
+        if not cand.exists():
+            continue
+        payload = json.loads(cand.read_text())
+        rows = list(payload.get("history") or [])
+        if rows:
+            hist.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
+            break
 if hist.exists():
     shutil.copy2(hist, partial / "skillopt_history.jsonl")
     payload["skillopt_history"] = [json.loads(l) for l in hist.read_text().splitlines() if l.strip()]
+# Paraphrase reeval summary if present
+reeval_sum = root / "eb_paraphrase_reeval_summary.json"
+if reeval_sum.exists():
+    shutil.copy2(reeval_sum, partial / "eb_paraphrase_reeval_summary.json")
+    payload["eb_paraphrase_reeval"] = json.loads(reeval_sum.read_text())
 (out / "final_ready.json").write_text(json.dumps(payload, indent=2) + "\n")
 print(json.dumps(payload, indent=2))
 if not (aw_ok and eb_ok):
@@ -61,11 +76,14 @@ if not (aw_ok and eb_ok):
 aw_sr, eb_sr = payload["aw"]["SR"], payload["eb"]["SR"]
 beats_aw = aw_sr is not None and aw_sr >= 0.84
 beats_eb = eb_sr is not None and eb_sr >= 0.78
+beats_align_eb = eb_sr is not None and eb_sr >= 0.80
 md = f"""# Fallback final results
 
 Protocol: RoboAgent official AW `eval_out_of_distribution` (0–133) and
 EB-ALFRED `base` (0–49). Stack: Align+USR + effect-verified Skill
 (`usr_fb_*` run dirs on the fallback branch).
+
+Survey / reproduced-workload analysis: `reports/FALLBACK_MIN_STANDARD.md`.
 
 ## Sealed SR
 
@@ -76,6 +94,7 @@ EB-ALFRED `base` (0–49). Stack: Align+USR + effect-verified Skill
 
 AW vs Align: {"PASS (≥0.84)" if beats_aw else "BELOW Align 0.84 — inspect failures"}
 EB vs Align+USR: {"PASS (≥0.78)" if beats_eb else "BELOW Align+USR 0.78 — inspect failures"}
+EB vs Align: {"PASS (≥0.80)" if beats_align_eb else "BELOW Align 0.80"}
 
 ## SkillOpt
 

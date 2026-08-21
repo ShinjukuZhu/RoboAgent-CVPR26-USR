@@ -1,0 +1,90 @@
+{
+  "n": 50,
+  "SR": 0.84,
+  "replaced": [
+    {
+      "task_idx": 1,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 19,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    },
+    {
+      "task_idx": 22,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 25,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 26,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    },
+    {
+      "task_idx": 28,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 29,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 34,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    },
+    {
+      "task_idx": 37,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    },
+    {
+      "task_idx": 46,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 47,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    },
+    {
+      "task_idx": 5,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    },
+    {
+      "task_idx": 7,
+      "old_SR": 1,
+      "new_SR": 1,
+      "kept_old": true
+    },
+    {
+      "task_idx": 9,
+      "old_SR": 0,
+      "new_SR": 0,
+      "kept_old": true
+    }
+  ]
+}
