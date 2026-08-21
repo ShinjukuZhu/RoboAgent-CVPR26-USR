@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-# When EB main (0-49) finishes, launch paraphrase re-eval on GPU 5 if free.
+# When EB main (unique tasks 0-49) finishes, launch paraphrase re-eval.
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
 RUN=$ROOT/runs/usr_minstd_skillopt
 CODE=$ROOT/code/RoboAgent_USR_SkillOpt
+PY=$ROOT/envs/RoboAgent_AW/bin/python
 while true; do
-  n=$(wc -l < "$RUN/usr_fb_eb50-base/results.jsonl" 2>/dev/null | tr -d '[:space:]' || echo 0)
-  echo "$(date -Is) eb_n=$n" >> "$RUN/logs/eb_reeval_waiter.log"
-  if [ "${n:-0}" -ge 50 ]; then
-    # wait until main EB process exits
-    if pgrep -f 'usr_fb_eb50 .*run_ebalf' >/dev/null; then
+  n=$($PY - <<'PY'
+import json
+from pathlib import Path
+p=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_eb50-base/results.jsonl")
+ids={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()} if p.exists() else set()
+print(len(ids))
+print(1 if ids == set(range(50)) else 0)
+PY
+)
+  unique=$(echo "$n" | sed -n '1p')
+  complete=$(echo "$n" | sed -n '2p')
+  echo "$(date -Is) eb_unique=$unique complete=$complete" >> "$RUN/logs/eb_reeval_waiter.log"
+  if [ "${complete:-0}" -eq 1 ]; then
+    if pgrep -f "runs/usr_minstd_skillopt/usr_fb_eb50 " >/dev/null || pgrep -f "eb_skip44_finish.sh" >/dev/null; then
       echo "$(date -Is) waiting main EB exit" >> "$RUN/logs/eb_reeval_waiter.log"
       sleep 60
       continue

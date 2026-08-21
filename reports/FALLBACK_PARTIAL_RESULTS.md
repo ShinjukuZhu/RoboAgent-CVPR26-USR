@@ -4,14 +4,12 @@
 
 | Split | n / target | SR so far | Notes |
 |---|---|---|---|
-| AW OOD | 30 / 134 | 0.767 | GPU1; recent fails are take/holding misses (not Skill grounding) |
-| EB base | 45 / 50 (gap@44) | 0.733 | task 45 OK; on 46–49 then retry 44; paraphrase reeval queued |
+| AW OOD | 34 / 134 | 0.794 | GPU1 keep-alive |
+| EB base | 46 unique / 50 | 0.717 | miss {44,47,48,49}; skip-44 then fill gap |
 | SkillOpt D_tr | 20 / 20 | 0.650 | done |
-| SkillOpt D_sel | 9 / 20 | 0.667 | GPU4 mid task 29 |
+| SkillOpt D_sel | 11 / 20 | 0.636 | GPU4 |
 
-**Already landed (code/docs, independent of sealed SR):**
-- Survey + reproduced-workload analysis → `reports/FALLBACK_MIN_STANDARD.md`
-- USR Skill contracts (stale perception / suffix / grounding / skip confirmed)
-- SkillOpt gate (`training/skillopt_evolve.py`, ACCEPT only on strict D_sel SR↑)
+**Landed already:** survey + USR Skill contracts + SkillOpt gate (`reports/FALLBACK_MIN_STANDARD.md`).
+**Pending seal:** AW134, EB50+paraphrase reeval, SkillOpt history, `FALLBACK_FINAL_RESULTS.md`.
 
 Refs: Align AW 0.84 / EB 0.80; Align+USR EB 0.78.

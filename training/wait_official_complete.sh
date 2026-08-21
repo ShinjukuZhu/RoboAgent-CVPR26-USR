@@ -17,6 +17,14 @@ def load(p):
         return []
     return [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
 aw_rows, eb_rows = load(aw), load(eb)
+
+def dedupe(rows):
+    by = {}
+    for r in rows:
+        by[int(r["task_idx"])] = r
+    return [by[i] for i in sorted(by)]
+
+aw_rows, eb_rows = dedupe(aw_rows), dedupe(eb_rows)
 aw_ids = [int(r["task_idx"]) for r in aw_rows]
 eb_ids = [int(r["task_idx"]) for r in eb_rows]
 ready = aw_ids == list(range(134)) and eb_ids == list(range(50))
@@ -29,6 +37,7 @@ payload = {
     "eb": {
         "n": len(eb_rows),
         "SR": (sum(int(r.get("SR") or 0) for r in eb_rows) / len(eb_rows)) if eb_rows else None,
+        "missing": [i for i in range(50) if i not in set(eb_ids)],
     },
     "baselines": {
         "native_aw": 0.81, "align_aw": 0.84,

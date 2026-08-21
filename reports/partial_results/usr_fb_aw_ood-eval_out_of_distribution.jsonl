@@ -28,3 +28,7 @@
 {"task_idx": 27, "GCR": 0.3333333333333333, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_27"}
 {"task_idx": 28, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_28"}
 {"task_idx": 29, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_29"}
+{"task_idx": 30, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_30"}
+{"task_idx": 31, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_31"}
+{"task_idx": 32, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_32"}
+{"task_idx": 33, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/episode_33"}
