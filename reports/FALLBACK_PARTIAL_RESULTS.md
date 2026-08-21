@@ -1,13 +1,12 @@
 # Fallback partial results (in-progress)
 
-Server: `/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt` (`usr_fb_*`).
+Server `usr_fb_*` + effect-verified Skill (paraphrase fix deployed; EB resumed at 32).
 
-| Split | n / target | SR so far |
-|---|---|---|
-| AW OOD | 14 / 134 | 0.857 |
-| EB base | 26 / 50 | 0.731 |
-| SkillOpt D_tr | 14 / 20 | 0.643 |
+| Split | n / target | SR so far | Notes |
+|---|---|---|---|
+| AW OOD | 20 / 134 | 0.900 | vs Align 0.84 |
+| EB base | 35 / 50 | 0.686 | vs Align+USR 0.78; post-32 uses relaxed grounding |
+| SkillOpt D_tr | 19 / 20 | 0.632 | evolve starts at n≥20 |
 
-References: Align AW 0.84 / EB 0.80; Align+USR EB 0.78; Native AW 0.81 / EB 0.78.
-
-Three sealed jobs remain healthy; SkillOpt waiter armed for D_tr≥20.
+Paraphrase re-eval of fails {1,7,19,22,28,29} armed after EB50 completes.
+Git pushes use Clash Verge mixed proxy `127.0.0.1:7897`.
