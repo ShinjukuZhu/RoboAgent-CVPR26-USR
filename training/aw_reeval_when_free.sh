@@ -54,14 +54,30 @@ run_one_task() {
     *) disp=$((90 + gpu)) ;;
   esac
   ensure_display "$disp"
+  local free_mib
+  free_mib=$("$ENV_BIN/python" - <<PY
+import subprocess
+gpu=int("$gpu")
+out=subprocess.check_output([
+  "nvidia-smi","--query-gpu=index,memory.free","--format=csv,noheader,nounits"
+], text=True)
+for line in out.splitlines():
+    parts=[p.strip() for p in line.split(",")]
+    if len(parts)>=2 and int(parts[0])==gpu:
+        print(int(float(parts[1]))); break
+else:
+    print(0)
+PY
+)
   local out=$RUN/aw_fail_reeval_free/task_${tid}
-  echo "$(date -Is) GPU$gpu run task $tid ($tag)" | tee -a "$LOG"
+  echo "$(date -Is) GPU$gpu run task $tid ($tag) free=${free_mib}MiB max_gpu=${free_mib}" | tee -a "$LOG"
   cd "$CODE"
   set +e
   env -u LD_LIBRARY_PATH \
     CUDA_VISIBLE_DEVICES=$gpu DISPLAY=:$disp ALFWORLD_DATA=$ROOT/data/alfworld \
     PATH=$ENV_BIN:$PATH PYTHONUNBUFFERED=1 \
     PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+    ROBOAGENT_MAX_GPU_MIB=$free_mib \
     FALLBACK_USR_SKILLOPT_AUTHORIZED=1 \
     ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen \
     ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 \

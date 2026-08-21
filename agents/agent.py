@@ -32,7 +32,14 @@ from peft import PeftModel
 class Agent(object):
     def __init__(self, vlm_model_path, env_name="alfworld"):
         import os as _os
-        self.vlm = Qwen2_5_VLForConditionalGeneration.from_pretrained(vlm_model_path, torch_dtype=torch.bfloat16, device_map="auto")
+        _load_kw = {"torch_dtype": torch.bfloat16, "device_map": "auto"}
+        _max_mib = _os.environ.get("ROBOAGENT_MAX_GPU_MIB", "").strip()
+        if _max_mib:
+            # Leave headroom for activations / GroundingDINO; rest stays on GPU.
+            _mib = max(2048, int(_max_mib) - 2048)
+            _load_kw["max_memory"] = {0: f"{_mib}MiB", "cpu": "200GiB"}
+            print(f"VLM_MAX_MEMORY: gpu0={_mib}MiB (from ROBOAGENT_MAX_GPU_MIB={_max_mib})")
+        self.vlm = Qwen2_5_VLForConditionalGeneration.from_pretrained(vlm_model_path, **_load_kw)
         _br_adapt = _os.environ.get("ROBOAGENT_BRAIN_ADAPTER", "").strip()
         if _br_adapt:
             from peft import PeftModel
