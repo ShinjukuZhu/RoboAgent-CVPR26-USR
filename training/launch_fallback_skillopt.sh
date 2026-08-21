@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# SkillOpt on AW ID: D_tr=0-19, D_sel=20-39. Does not read sealed OOD/EB.
+set -euo pipefail
+ROOT=/mnt/autodl_tmp1/zhuyanhao
+CODE=${CODE:-$ROOT/code/RoboAgent_USR_SkillOpt}
+CKPT=$ROOT/ckpt/RoboAgent_CVPR26
+RUN=$ROOT/runs/fallback_usr_skillopt
+ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
+SKILL=$CODE/skills/effect_verified_skill_v0000.md
+GPU=${GPU:-4}
+DISPLAY_NUM=${DISPLAY_NUM:-104}
+mkdir -p "$RUN/logs" "$RUN/skillopt"
+cd "$CODE"
+
+DEV_LOG=$RUN/logs/aw_id_dev.log
+if [[ ! -f $RUN/skillopt_dev-eval_in_distribution/results.jsonl ]]; then
+  : > "$DEV_LOG"
+  env -u LD_LIBRARY_PATH \
+    CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM PATH=$ENV_BIN:$PATH \
+    PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+    ROBOAGENT_OG_BACKEND=llmdet_qwen_usr \
+    ROBOAGENT_EG_BACKEND=qwen \
+    ROBOAGENT_SD_BACKEND=usr \
+    ROBOAGENT_USR_CHANNEL=1 \
+    ROBOAGENT_LLMDET_PATH=$ROOT/ckpt/llmdet_large \
+    ROBOAGENT_LLMDET_THRESHOLD=0.35 \
+    ROBOAGENT_EVO_SKILL=$SKILL \
+    python -u run_aw.py --qwen_path "$CKPT" \
+      --save_path "$RUN/skillopt_dev" \
+      --split eval_in_distribution --start 0 --end 20 --seed 42 \
+    > "$DEV_LOG" 2>&1
+fi
+
+SEL_CMD='env -u LD_LIBRARY_PATH CUDA_VISIBLE_DEVICES='$GPU' DISPLAY=:'$DISPLAY_NUM' PATH='$ENV_BIN':$PATH PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 ROBOAGENT_LLMDET_PATH='$ROOT'/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 python -u run_aw.py --qwen_path '"$CKPT"' --save_path {output}/run --split eval_in_distribution --start 20 --end 40 --seed 42'
+
+nohup env -u LD_LIBRARY_PATH PATH=$ENV_BIN:$PATH PYTHONUNBUFFERED=1 \
+  python -u training/skillopt_evolve.py \
+    --initial-skill "$SKILL" \
+    --development-run "$RUN/skillopt_dev-eval_in_distribution" \
+    --output "$RUN/skillopt" \
+    --rounds 3 \
+    --selection-start 20 \
+    --selection-end 40 \
+    --selection-command "$SEL_CMD" \
+  > "$RUN/logs/skillopt.log" 2>&1 &
+echo $! > "$RUN/skillopt.pid"
+echo "SKILLOPT_PID=$(cat $RUN/skillopt.pid) GPU=$GPU LOG=$RUN/logs/skillopt.log"

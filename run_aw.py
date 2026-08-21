@@ -98,6 +98,20 @@ if __name__ == "__main__":
 
         score = runner.run()
         print(f"\n************RESULT FOR TASK {i_episode}: {score}\n")
+        try:
+            gcr = float(score) if score is not None else 0.0
+        except Exception:
+            gcr = 0.0
+        success = 1 if gcr >= 1.0 - 1e-8 else 0
+        rec = {
+            "task_idx": i_episode,
+            "GCR": gcr,
+            "SR": success,
+            "valid_run": 1,
+            "episode_dir": save_path_trial,
+        }
+        with open(os.path.join(save_path, "results.jsonl"), "a") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
         
         

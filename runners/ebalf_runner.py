@@ -29,11 +29,15 @@ class EBAlfRunner():
                     break
                 
                 if exec_action != "pass":
+                    if self.agent.should_skip_evo_action(action):
+                        continue
                     print(f"--------------------[ENV STEP {steps}]: {exec_action}\n")
                     steps += 1
                 done, info = self.execute(exec_action, action)
                 if done:
                     gcr = info['task_success']
+                    break
+                if self.agent.consume_evo_interrupt():
                     break
                 if info['last_action_success'] == 0:
                     self.consecutive_failures += 1

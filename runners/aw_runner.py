@@ -27,11 +27,15 @@ class AWRunner():
                     break
                 
                 if action != "pass":
+                    if self.agent.should_skip_evo_action(action):
+                        continue
                     print(f"--------------------[ENV STEP {steps}]: {action}\n")
                     steps += 1
                 done, info = self.execute(action)
                 if done:
                     gcr = info["goal_condition_success_rate"][0]
+                    break
+                if self.agent.consume_evo_interrupt():
                     break
             if done or action == "fail":
                 break

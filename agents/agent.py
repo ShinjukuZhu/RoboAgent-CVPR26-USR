@@ -21,6 +21,7 @@ from agents.skill_alignment_og import ground_aligned as llmdet_qwen_aligned_grou
 from agents.naive_detector import ground_naive as naive_detector_ground
 from agents.eg_llm_backend import propose_eg, propose_eg_ft_qwen
 from agents.skill_memory import SkillMemory, env_mode as skill_memory_env_mode
+from agents.evo_skill import EffectVerifiedSkill
 from agents.florence2_sd import describe_naive, describe_adapter
 from agents.sd_florence_cascade import describe_cascade as florence_qwen_verify_describe
 import os
@@ -73,6 +74,16 @@ class Agent(object):
                 enable_cross_episode_adapt=False,  # hard OFF regardless of env
                 persist_path=f"{self.save_path}/skill_memory.jsonl",
             )
+        self._evo_interrupt_actions = False
+        self._evo_skill = EffectVerifiedSkill.from_environment(
+            trace_fn=lambda payload: append_trace(self.save_path, payload)
+        )
+        if self._evo_skill is not None:
+            append_trace(self.save_path, {
+                "event": "evo_skill_loaded",
+                **self._evo_skill.manifest(),
+            })
+        self.observation_version = 0
         self.save_i = 0
         
         self.observed_objects_list = [x for x in sorted(obj_list)]
@@ -100,11 +111,16 @@ class Agent(object):
     def process_observation(self, rgb, env_step_id):
         cv2.imwrite(f"{self.save_path}/step_{env_step_id}.png", rgb[:, :, ::-1])
         self.cur_rgb_path = f"{self.save_path}/step_{env_step_id}.png"
+        self.observation_version += 1
+        if self._evo_skill is not None:
+            self._evo_skill.note_new_observation()
         
         
     def process_task(self, task_info, task_instruction):
         print("[TASK] ", task_instruction)
         self.task_instruction = task_instruction
+        if self._evo_skill is not None:
+            self._evo_skill.set_task(task_instruction)
         return
     
     def process_feedback(self, message, last_action):
@@ -118,6 +134,29 @@ class Agent(object):
         aid = len(self.last_local_traj) // 2 + 1
         self.last_local_traj.append(f"[action {aid}] {last_action}")
         self.last_local_traj.append(f"[feedback {aid}] {'success' if message else 'failure'}")
+
+        if self._evo_skill is not None:
+            intervention = self._evo_skill.observe_action_result(last_action, bool(message))
+            if intervention is not None:
+                self._activate_evo_intervention(intervention.reason, intervention.invalidate_suffix)
+            if os.environ.get("ROBOAGENT_USR_CHANNEL", "0") == "1":
+                try:
+                    ch = get_channel()
+                    og = dict(ch._usr.get("og") or {})
+                    temporal = dict(og.get("temporal_context") or {})
+                    temporal["observation_version"] = self.observation_version
+                    extra = dict(og.get("skill_specific") or {})
+                    extra["confirmed_progress"] = list(self._evo_skill.confirmed_effects)
+                    extra["last_effect"] = {
+                        "expected": self._evo_skill.expected_effect(last_action),
+                        "verified": bool(message),
+                    }
+                    if og:
+                        og["temporal_context"] = temporal
+                        og["skill_specific"] = extra
+                        ch._usr["og"] = og
+                except Exception:
+                    pass
         
         self.scene_description = ""
         if message:
@@ -208,6 +247,10 @@ class Agent(object):
         
         ability_name, ability_args = self.ability_buffer[self.ability_buffer_idx]
         ability_res = self.get_ability_result(ability_name, ability_args)
+        if ability_name == "object_grounding" and self._evo_skill is not None:
+            ability_res, intervention = self._evo_skill.validate_grounding(ability_args, ability_res)
+            if intervention is not None:
+                self._activate_evo_intervention(intervention.reason, intervention.invalidate_suffix)
         try:
             _ok = ability_res is not None and ability_res is not False and ability_res != ""
             self._maybe_record_skill(ability_name, ability_args, ability_res, _ok)
@@ -270,10 +313,13 @@ class Agent(object):
         return ["pass"]
     
     def get_core_result(self,):
+        scheduler_history = self.core_history
+        if self._evo_skill is not None:
+            scheduler_history += self._evo_skill.scheduler_context()
         res = qwen_inference(
             self.vlm_processer, self.vlm, 
             [], 
-            self.prompt_ct.format(self.task_instruction, self.core_history),
+            self.prompt_ct.format(self.task_instruction, scheduler_history),
             log_file=f"{self.save_path}/qwen_log.txt",
             role="scheduler",
             save_path=self.save_path,
@@ -341,6 +387,47 @@ class Agent(object):
                 append_trace(self.save_path, {"event": "skill_memory_error", "error": str(e)[:300]})
             except Exception:
                 pass
+
+    def _activate_evo_intervention(self, reason, invalidate_suffix=True):
+        note = f"Effect verification: {reason}\n"
+        if not self.core_history.endswith(note):
+            self.core_history += note
+        if invalidate_suffix:
+            self.ability_buffer = []
+            self.ability_buffer_idx = 0
+            self._evo_interrupt_actions = True
+        append_trace(self.save_path, {
+            "event": "evo_suffix_invalidated" if invalidate_suffix else "evo_warning",
+            "reason": reason,
+            "confirmed_progress": (
+                list(self._evo_skill.confirmed_effects) if self._evo_skill is not None else []
+            ),
+            "observation_version": self.observation_version,
+        })
+
+    def consume_evo_interrupt(self):
+        value = bool(self._evo_interrupt_actions)
+        self._evo_interrupt_actions = False
+        return value
+
+    def should_skip_evo_action(self, action):
+        if self._evo_skill is None:
+            return False
+        intervention = self._evo_skill.precheck_action(action)
+        if intervention is None:
+            return False
+        append_trace(self.save_path, {
+            "event": "evo_redundant_action_skipped",
+            "action": action,
+            "reason": intervention.reason,
+        })
+        if self._evo_skill.virtual_skip_feedback_enabled():
+            aid = len(self.last_local_traj) // 2 + 1
+            self.last_local_traj.append(f"[action {aid}] {action}")
+            self.last_local_traj.append(
+                f"[feedback {aid}] success (verified effect already satisfied)"
+            )
+        return True
 
     def get_ability_result(self, ability_name, args):
         if ability_name == "exploration_guidance":
@@ -510,7 +597,8 @@ class Agent(object):
         elif ability_name == "object_grounding":
             target_obj = args.split(" (hint")[0].split(" (except")[0]
             if self.last_goto == target_obj: # shortcut
-                return [{"label": target_obj}]
+                if not (self._evo_skill is not None and self._evo_skill.should_bypass_last_goto_shortcut()):
+                    return [{"label": target_obj}]
             og_backend = os.environ.get("ROBOAGENT_OG_BACKEND", "qwen").lower()
             if og_backend == "llmdet":
                 ret, meta = llmdet_ground(
