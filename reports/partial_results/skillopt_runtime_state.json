@@ -1,0 +1,41 @@
+{
+  "partial": false,
+  "looked_at_sealed": false,
+  "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md",
+  "current_skill_sha256": "c318ef9963f41d9c673b7d1a1a84e9cdbbb421442ed3b66c7317e29a87c257c1",
+  "history": [
+    {
+      "round": 1,
+      "decision": "REJECT",
+      "reason": "selection SR did not strictly rise (0.7500 -> 0.5000)",
+      "proposal": {
+        "repeated_effect_miss_limit": 3
+      },
+      "generator": "evidence",
+      "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md",
+      "candidate_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0001.md",
+      "current_SR": 0.75,
+      "candidate_SR": 0.5
+    },
+    {
+      "round": 2,
+      "decision": "SKIP",
+      "reason": "optimizer proposed no new bounded edit after round-1 reject",
+      "proposal": {},
+      "generator": "evidence",
+      "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md"
+    },
+    {
+      "round": 3,
+      "decision": "SKIP",
+      "reason": "optimizer proposed no new bounded edit after round-1 reject",
+      "proposal": {},
+      "generator": "evidence",
+      "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md"
+    }
+  ],
+  "selection_SR": 0.75,
+  "selection_n": 20,
+  "sealed_after_round": 1,
+  "note": "Further D_sel rounds skipped after first gated decision for min-standard seal"
+}

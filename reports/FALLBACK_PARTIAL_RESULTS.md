@@ -15,12 +15,20 @@
 EB lift came from USR + effect-verified Skill + paraphrase grounding fixes, then
 paraphrase reeval on false-reject fails (`eb_paraphrase_reeval_summary.json`).
 
+## SkillOpt (sealed)
+
+| Round | Decision | Detail |
+|---|---|---|
+| 1 | **REJECT** | D_sel 0.75 → 0.50 (`repeated_effect_miss_limit` 2→3); early seal: max remaining SR ≤ 0.75 |
+| 2–3 | SKIP | no further bounded edit after reject |
+
+Keep **skill_v0000** (seed). History: `partial_results/skillopt_history.jsonl`.
+
 ## In progress
 
 | Track | Status |
 |---|---|
-| AW OOD | **59 / 134 @ 0.76**; hang-safe fill 54–69 (GPU1); shard 70–90 (GPU7); hang-safe 90–134 (GPU6) |
-| SkillOpt evolution | round-1 candidate (`miss_limit` 2→3) **15/20 @ 0.67**; sealer writes ACCEPT/REJECT when 20–39 complete |
+| AW OOD | hang-safe fill mid-gap (GPU1 + GPU4); shard 70–90 (GPU7); hang-safe 90–134 (GPU6) |
 
 ## Skill contracts landed on USR
 
