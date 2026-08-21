@@ -73,6 +73,10 @@ DEFAULT_ALIASES = {
     "garbagecan": "garbagecan",
     "desk lamp": "desklamp",
     "floor lamp": "floorlamp",
+    "tall lamp": "floorlamp",
+    "talllamp": "floorlamp",
+    "standing lamp": "floorlamp",
+    "standinglamp": "floorlamp",
     "soap bottle": "soapbottle",
     "spray bottle": "spraybottle",
     "watering can": "wateringcan",
@@ -131,6 +135,7 @@ RECEPTACLE_PARAPHRASE_CLUSTERS = (
     frozenset({"remotecontrol", "tvremote", "remote"}),
     frozenset({"countertop", "kitchenisland", "island"}),
     frozenset({"sidetable", "microwaveoventable", "oventable"}),
+    frozenset({"floorlamp", "talllamp", "standinglamp"}),
 )
 
 

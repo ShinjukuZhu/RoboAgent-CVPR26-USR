@@ -44,6 +44,8 @@ leave implicit, but that individual systems already demonstrated:
     "tv stand": "dresser",
     "microwave oven table": "sidetable",
     "oven table": "sidetable",
+    "tall lamp": "floorlamp",
+    "standing lamp": "floorlamp",
     "apple sliced": "apple",
     "bread sliced": "bread",
     "lettuce sliced": "lettuce",
