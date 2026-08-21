@@ -9,7 +9,7 @@ ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
 NEED_MIB=${NEED_MIB:-55000}
 POLL_SEC=${POLL_SEC:-120}
-TIMEOUT_SEC=${TIMEOUT_SEC:-720}
+TIMEOUT_SEC=${TIMEOUT_SEC:-1800}
 LOG=$RUN/logs/aw_reeval_when_free.log
 mkdir -p "$RUN/logs"
 
