@@ -7,7 +7,8 @@ PY=$ROOT/envs/RoboAgent_AW/bin/python
 LOG=$RUN/logs/aw_merge_watcher.log
 mkdir -p "$RUN/logs"
 while true; do
-  $PY - <<'PY' >>"$LOG" 2>&1 || true
+  set +e
+  $PY - <<'PY' >>"$LOG" 2>&1
 import json
 from pathlib import Path
 root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
@@ -48,6 +49,7 @@ print(json.dumps(payload))
 raise SystemExit(1)
 PY
   status=$?
+  set -e
   if [ "$status" -eq 0 ]; then
     echo "$(date -Is) AW merge complete" >>"$LOG"
     exit 0
