@@ -6,11 +6,18 @@ ROOT=/mnt/autodl_tmp1/zhuyanhao
 CODE=${CODE:-$ROOT/code/RoboAgent_USR_SkillOpt}
 CKPT=$ROOT/ckpt/RoboAgent_CVPR26
 RUN=$ROOT/runs/fallback_usr_skillopt
+FREEZE=${V2_FREEZE_FILE:-$ROOT/runs/V2_FROZEN.json}
 ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
 GPU=${GPU:-0}
 DISPLAY_NUM=${DISPLAY_NUM:-96}
 ALFWORLD_DATA=${ALFWORLD_DATA:-$ROOT/data/alfworld}
+
+if [[ ! -f "$FREEZE" ]] || ! grep -q '"sealed_eval_authorized": true' "$FREEZE"; then
+  echo "Refusing AW OOD evaluation before V2 architecture freeze: $FREEZE" >&2
+  exit 3
+fi
+
 mkdir -p "$RUN/logs"
 cd "$CODE"
 LOG=$RUN/logs/aw_ood_skill.log
