@@ -43,7 +43,7 @@ launch_tail() {
     sleep 2
   fi
   echo "$(date -Is) tail $tag gpu=$gpu $start-$end" | tee -a "$LOG"
-  nohup env GPU="$gpu" DISPLAY_NUM="$disp" START="$start" END="$end" STUCK_SEC=720 SAVE_TAG="$tag" \
+  nohup env GPU="$gpu" DISPLAY_NUM="$disp" START="$start" END="$end" STUCK_SEC=480 SAVE_TAG="$tag" \
     bash "$CODE/training/aw_range_watchdog.sh" \
     >> "$RUN/logs/${tag}.log" 2>&1 &
 }

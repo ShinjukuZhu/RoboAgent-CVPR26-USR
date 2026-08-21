@@ -8,7 +8,7 @@ LOG=$RUN/logs/aw_launch_watchdogs.log
 mkdir -p "$RUN/logs"
 
 launch_one() {
-  local gpu=$1 disp=$2 start=$3 end=$4 tag=$5 stuck=${6:-720}
+  local gpu=$1 disp=$2 start=$3 end=$4 tag=$5 stuck=${6:-480}
   if pgrep -f "$tag" >/dev/null; then
     echo "$(date -Is) skip live $tag" | tee -a "$LOG"
     return 0
