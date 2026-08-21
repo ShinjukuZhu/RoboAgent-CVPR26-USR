@@ -1,0 +1,6 @@
+{"task_idx": 0, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/official_aw_ood-eval_out_of_distribution/episode_0"}
+{"task_idx": 1, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/official_aw_ood-eval_out_of_distribution/episode_1"}
+{"task_idx": 2, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/official_aw_ood-eval_out_of_distribution/episode_2"}
+{"task_idx": 3, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/official_aw_ood-eval_out_of_distribution/episode_3"}
+{"task_idx": 4, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/official_aw_ood-eval_out_of_distribution/episode_4"}
+{"task_idx": 5, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/official_aw_ood-eval_out_of_distribution/episode_5"}

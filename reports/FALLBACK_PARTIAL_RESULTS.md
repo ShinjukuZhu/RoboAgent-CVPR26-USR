@@ -4,42 +4,25 @@ Updated from server run root
 `/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt`.
 
 Protocol: original RoboAgent AW OOD + EB-ALFRED base. Config = Align+USR +
-effect-verified Skill v0 (`ROBOAGENT_OG_BACKEND=llmdet_qwen_usr`,
-`ROBOAGENT_SD_BACKEND=usr`, `ROBOAGENT_USR_CHANNEL=1`,
-`ROBOAGENT_EVO_SKILL=skills/effect_verified_skill_v0000.md`).
+effect-verified Skill v0.
 
-## Incident (2026-08-21)
+## Live snapshot
 
-A V2 freeze/quarantine command killed PIDs for the fallback AW/EB/SkillOpt jobs
-and renamed live dirs to `*.pre_freeze_contaminated_20260821_0326EDT` because
-`V2_FROZEN.json` was absent. Progress was preserved and restored under `usr_fb_*`
-paths that the freeze script does not target. Skill paraphrase fix
-(kitchen/wooden table → dining table) remains in the Skill artifact.
+| Split | Path | n / target | SR so far | Notes |
+|---|---|---|---|---|
+| AW OOD sealed | `usr_fb_aw_ood-eval_out_of_distribution` | 6 / 134 | 1.000 | not final |
+| EB base sealed | `usr_fb_eb50-base` | 17 / 50 | 0.765 | not final |
+| AW ID D_tr | `usr_fb_skillopt_dev-eval_in_distribution` | 8 / 20 | 0.750 | SkillOpt evidence only |
 
-## Live snapshot (restored + resumed)
-
-| Split | Path | n / target | SR so far | Resume from | Notes |
-|---|---|---|---|---|---|
-| AW OOD sealed | `usr_fb_aw_ood-eval_out_of_distribution` | 6 / 134 | 1.000 | 6 | early; not final |
-| EB base sealed | `usr_fb_eb50-base` | 14 / 50 | 0.714 | 14 | early; not final |
-| AW ID D_tr | `usr_fb_skillopt_dev-eval_in_distribution` | 7 / 20 | 0.714 | 7 | SkillOpt evidence only |
-
-Frozen references (do not overwrite):
-
-| Method | AW OOD | EB base |
-|---|---|---|
-| Native | 0.81 | 0.78 |
-| Align | 0.84 | 0.80 |
-| Align+USR | — | 0.78 |
+Frozen references: Native AW 0.81 / EB 0.78; Align AW 0.84 / EB 0.80; Align+USR EB 0.78.
 
 ## Isolation
 
-- Codex V2 SkillOpt remains on GPU 7 / `RoboAgent_Evo_20260820`.
-- This branch does **not** require `V2_FROZEN.json`.
-- Do not kill `FALLBACK_USR_SKILLOPT_AUTHORIZED=1` or rename `usr_fb_*`.
+- Codex V2 remains untouched (GPU 7 SkillOpt + profile C).
+- Fallback uses `usr_fb_*` + `FALLBACK_USR_SKILLOPT_AUTHORIZED=1`; must not be quarantined for missing `V2_FROZEN.json`.
 
 ## Next
 
-1. Finish EB50 and AW134.
-2. Finish D_tr 0–19, then SkillOpt D_sel 20–39 with strict SR gate.
-3. Replace this file with `FALLBACK_FINAL_RESULTS.md` and push artifacts.
+1. Finish EB50 and AW134; require SR ≥ Align (AW) / Align+USR (EB) preferably higher.
+2. Finish D_tr then SkillOpt D_sel with strict SR gate.
+3. Write `FALLBACK_FINAL_RESULTS.md` and push artifacts.
