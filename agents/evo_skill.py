@@ -78,7 +78,23 @@ DEFAULT_ALIASES = {
     "watering can": "wateringcan",
     "hand towel": "handtowel",
     "dish sponge": "dishsponge",
+    # Instruction paraphrases for the same ALFRED dining-table receptacle.
+    # Do NOT collapse coffee/side tables into dining table.
+    "kitchentable": "diningtable",
+    "woodentable": "diningtable",
+    "dinnertable": "diningtable",
+    "dining table": "diningtable",
+    "kitchen table": "diningtable",
+    "wooden table": "diningtable",
 }
+
+# Compact-form clusters: paraphrases of one receptacle class, not distinct fixtures.
+RECEPTACLE_PARAPHRASE_CLUSTERS = (
+    frozenset({"diningtable", "kitchentable", "woodentable", "dinnertable"}),
+    frozenset({"garbagecan", "trashcan", "rubbishbin"}),
+    frozenset({"sofa", "couch"}),
+    frozenset({"tvstand", "televisionstand"}),
+)
 
 
 @dataclass(frozen=True)
@@ -170,6 +186,16 @@ class EvoSkillSpec:
         aliased = self.aliases.get(raw, raw)
         compact = _compact(aliased)
         return _compact(self.aliases.get(compact, compact))
+
+    def objects_compatible(self, expected: str, observed: str) -> bool:
+        if not expected or not observed:
+            return True
+        if expected == observed or expected in observed or observed in expected:
+            return True
+        for cluster in RECEPTACLE_PARAPHRASE_CLUSTERS:
+            if expected in cluster and observed in cluster:
+                return True
+        return False
 
     def to_payload(self) -> Dict[str, Any]:
         return {
@@ -290,9 +316,7 @@ class EffectVerifiedSkill:
                 reason="functional_or_abstract_target",
             )
             return result, None
-        compatible = bool(expected and observed) and (
-            expected == observed or expected in observed or observed in expected
-        )
+        compatible = self.spec.objects_compatible(expected, observed)
         if compatible or not expected or not observed:
             self._trace(
                 "grounding_effect_check",

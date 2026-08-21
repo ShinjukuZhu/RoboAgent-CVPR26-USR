@@ -52,6 +52,26 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         self.assertIs(checked, result)
         self.assertIsNone(intervention)
 
+    def test_table_paraphrases_are_compatible(self):
+        skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
+        restored, intervention = skill.validate_grounding(
+            "kitchen table", [{"label": "DiningTable"}]
+        )
+        self.assertEqual(restored, [{"label": "DiningTable"}])
+        self.assertIsNone(intervention)
+        restored, intervention = skill.validate_grounding(
+            "wooden table", [{"label": "dining table"}]
+        )
+        self.assertIsNone(intervention)
+
+    def test_distinct_tables_still_conflict(self):
+        skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
+        restored, intervention = skill.validate_grounding(
+            "CoffeeTable", [{"label": "DiningTable"}]
+        )
+        self.assertFalse(restored)
+        self.assertEqual(intervention.kind, "object_mismatch")
+
     def test_wrong_grounding_is_blocked_and_requests_replan(self):
         checked, intervention = self.runtime.validate_grounding(
             "Spoon 1", [{"label": "Ladle"}]

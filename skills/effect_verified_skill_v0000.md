@@ -24,7 +24,18 @@ leave implicit, but that individual systems already demonstrated:
   "grounding_contract_mode": "referential_only",
   "skip_feedback_mode": "virtual_success",
   "invalidate_perception_after_world_change": true,
-  "recovery_instruction": "Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain."
+  "recovery_instruction": "Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
+  "aliases": {
+    "kitchen table": "diningtable",
+    "wooden table": "diningtable",
+    "dinner table": "diningtable",
+    "dining table": "diningtable",
+    "apple sliced": "apple",
+    "bread sliced": "bread",
+    "lettuce sliced": "lettuce",
+    "potato sliced": "potato",
+    "tomato sliced": "tomato"
+  }
 }
 ```
 
@@ -32,6 +43,8 @@ leave implicit, but that individual systems already demonstrated:
 
 - Environment success is recorded as progress only after the simulator confirms it.
 - A clear requested-object / returned-object conflict is treated as not-found.
+- Instruction paraphrases of the same dining-table receptacle (kitchen/wooden/dinner)
+  are compatible; coffee/side tables remain distinct.
 - Functional queries such as "some tool for cooling" are not forced into a
   literal object-class match.
 - Repeated missing effects invalidate the remaining ability-buffer suffix.
