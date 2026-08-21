@@ -2,7 +2,7 @@
 # When EB main (0-49) finishes, launch paraphrase re-eval on GPU 5 if free.
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
-RUN=$ROOT/runs/fallback_usr_skillopt
+RUN=$ROOT/runs/usr_minstd_skillopt
 CODE=$ROOT/code/RoboAgent_USR_SkillOpt
 while true; do
   n=$(wc -l < "$RUN/usr_fb_eb50-base/results.jsonl" 2>/dev/null | tr -d '[:space:]' || echo 0)

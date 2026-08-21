@@ -2,12 +2,12 @@
 # Periodic status dump for the fallback branch. Does not touch V2 trees.
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
-RUN=$ROOT/runs/fallback_usr_skillopt
+RUN=$ROOT/runs/usr_minstd_skillopt
 while true; do
   /mnt/autodl_tmp1/zhuyanhao/envs/RoboAgent_AW/bin/python - <<'PY'
 import json, time
 from pathlib import Path
-root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt")
+root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
 payload = {"ts": time.time(), "runs": {}}
 for name, need in {
     "usr_fb_aw_ood-eval_out_of_distribution": 134,

@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
 CODE=${CODE:-$ROOT/code/RoboAgent_USR_SkillOpt}
 CKPT=$ROOT/ckpt/RoboAgent_CVPR26
-RUN=$ROOT/runs/fallback_usr_skillopt
+RUN=$ROOT/runs/usr_minstd_skillopt
 ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 EB_ROOT=$ROOT/code/EmbodiedBench
 EB_DATA=$EB_ROOT/embodiedbench/envs/eb_alfred/data/splits/splits.json
@@ -46,7 +46,7 @@ done
 $ENV_BIN/python - <<'PY'
 import json, shutil
 from pathlib import Path
-root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt")
+root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
 main = root / "usr_fb_eb50-base" / "results.jsonl"
 reeval_root = root / "eb_paraphrase_reeval"
 backup = root / "usr_fb_eb50-base" / "results.jsonl.pre_paraphrase_reeval"

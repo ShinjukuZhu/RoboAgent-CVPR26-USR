@@ -2,7 +2,7 @@
 # Pull sealed-run summaries into the repo when AW134 + EB50 are complete.
 set -euo pipefail
 ROOT=${ROOT:-/mnt/autodl_tmp1/zhuyanhao}
-RUN=$ROOT/runs/fallback_usr_skillopt
+RUN=$ROOT/runs/usr_minstd_skillopt
 CODE=${CODE:-$ROOT/code/RoboAgent_USR_SkillOpt}
 OUT=${OUT:-$CODE/reports}
 PY=$ROOT/envs/RoboAgent_AW/bin/python
@@ -10,7 +10,7 @@ PY=$ROOT/envs/RoboAgent_AW/bin/python
 $PY - <<'PY'
 import json, shutil
 from pathlib import Path
-root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt")
+root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
 out = Path("/mnt/autodl_tmp1/zhuyanhao/code/RoboAgent_USR_SkillOpt/reports")
 partial = out / "partial_results"
 partial.mkdir(parents=True, exist_ok=True)

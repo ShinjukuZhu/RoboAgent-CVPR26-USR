@@ -2,14 +2,14 @@
 # When official AW/EB finishes, write a final summary JSON. Does not touch V2.
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
-RUN=$ROOT/runs/fallback_usr_skillopt
+RUN=$ROOT/runs/usr_minstd_skillopt
 CODE=$ROOT/code/RoboAgent_USR_SkillOpt
 while true; do
   set +e
   /mnt/autodl_tmp1/zhuyanhao/envs/RoboAgent_AW/bin/python - <<'PY'
 import json
 from pathlib import Path
-root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt")
+root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
 aw = root / "usr_fb_aw_ood-eval_out_of_distribution" / "results.jsonl"
 eb = root / "usr_fb_eb50-base" / "results.jsonl"
 def load(p):
