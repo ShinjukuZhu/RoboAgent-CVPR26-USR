@@ -172,8 +172,13 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         self.assertTrue(intervention.invalidate_suffix)
         intervention = self.runtime.precheck_action("take CounterTop 1 from Toaster 1")
         self.assertEqual(intervention.kind, "nonpickupable_take")
-        # Portable objects still allowed.
+        intervention = self.runtime.precheck_action("heat Microwave 1 with Microwave 1")
+        self.assertEqual(intervention.kind, "nonpickupable_take")
+        intervention = self.runtime.precheck_action("clean Sink 1 with Sink 1")
+        self.assertEqual(intervention.kind, "nonpickupable_take")
+        # Portable objects / valid heat still allowed.
         self.assertIsNone(self.runtime.precheck_action("take Apple 1 from CounterTop 1"))
+        self.assertIsNone(self.runtime.precheck_action("heat Apple 1 with Microwave 1"))
 
 
 if __name__ == "__main__":

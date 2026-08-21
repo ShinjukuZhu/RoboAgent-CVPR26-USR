@@ -74,3 +74,5 @@ leave implicit, but that individual systems already demonstrated:
   shortcut is disabled until the next real object-grounding call.
 - Taking a non-pickupable receptacle/appliance (microwave, countertop, sink, …)
   is blocked and forces suffix replan (identity contract).
+- Heating/cleaning/cooling/slicing the appliance itself (e.g. `heat Microwave
+  with Microwave`) is blocked the same way; use a portable object instead.

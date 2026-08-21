@@ -366,7 +366,7 @@ class EffectVerifiedSkill:
         self.perception_stale = False
 
     def precheck_action(self, action: str) -> Optional[SkillIntervention]:
-        blocked = self._precheck_nonpickupable_take(action)
+        blocked = self._precheck_nonpickupable_object_action(action)
         if blocked is not None:
             return blocked
         if not self.spec.skip_confirmed_effects:
@@ -387,24 +387,26 @@ class EffectVerifiedSkill:
         )
         return SkillIntervention(kind="effect_already_satisfied", reason=reason)
 
-    def _precheck_nonpickupable_take(self, action: str) -> Optional[SkillIntervention]:
+    def _precheck_nonpickupable_object_action(self, action: str) -> Optional[SkillIntervention]:
         if not self.spec.block_nonpickupable_take:
             return None
-        obj = self._parse_take_object(action)
-        if not obj:
+        verb, obj = self._parse_manipulated_object(action)
+        if not verb or not obj:
             return None
         cls = self.spec.canonical_object(obj)
         if cls not in NON_PICKUPABLE_CLASSES:
             return None
         reason = (
-            f"Blocked take of non-pickupable class {cls!r} from action {action!r}. "
-            "Re-observe and take a portable object, not a receptacle/appliance."
+            f"Blocked {verb} of non-portable class {cls!r} from action {action!r}. "
+            "Operate on a portable object (e.g. heat Apple with Microwave), "
+            "not the receptacle/appliance itself."
         )
         self._request_replan(reason)
         self._trace(
             "action_precondition_check",
             action=action,
             blocked_nonpickupable=cls,
+            verb=verb,
             skipped=True,
         )
         return SkillIntervention(
@@ -414,15 +416,16 @@ class EffectVerifiedSkill:
         )
 
     @staticmethod
-    def _parse_take_object(action: str) -> str:
+    def _parse_manipulated_object(action: str) -> Tuple[str, str]:
         low = str(action or "").strip().lower()
         m = re.match(
-            r"^(?:take|pick(?:\s+up)?)\s+(.+?)(?:\s+from\s+.+)?$",
+            r"^(take|pick(?:\s+up)?|heat|cool|clean|slice)\s+(.+?)(?:\s+(?:from|with)\s+.+)?$",
             low,
         )
         if not m:
-            return ""
-        return m.group(1).strip()
+            return "", ""
+        verb = m.group(1).replace("pick up", "take").replace("pick", "take")
+        return verb, m.group(2).strip()
 
     def validate_grounding(self, target: str, result: Any) -> Tuple[Any, Optional[SkillIntervention]]:
         self.note_fresh_grounding()
