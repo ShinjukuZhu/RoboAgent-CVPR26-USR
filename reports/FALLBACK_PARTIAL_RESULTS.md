@@ -1,17 +1,15 @@
 # Fallback partial results (in-progress)
 
 **Run root:** `/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt`
-(V2 hard-codes of `fallback_usr_skillopt` miss this path.)
 
-| Split | n / target | SR so far | Resume |
+| Split | n / target | SR so far | Notes |
 |---|---|---|---|
-| AW OOD | 27 / 134 | 0.815 | from 27 (GPU1); grounding hotfix applied for remaining |
-| EB base | 44 / 50 | ~0.72 | finishing 39–50 (GPU2); paraphrase reeval queued |
+| AW OOD | 29 / 134 | 0.793 | GPU1; keep-alive armed |
+| EB base | 44 / 50 (+task 45 running) | 0.727 | skipped stuck 44 → finish 45–49 then retry 44 |
 | SkillOpt D_tr | 20 / 20 | 0.650 | done |
-| SkillOpt D_sel | 4 / 20 | 0.500 | from 23 (GPU6) |
+| SkillOpt D_sel | 9 / 20 | 0.667 | GPU4 from 29 |
 
-**Hotfix (2026-08-21):** compact location tokens (`ontable`), Align-compatible
-`kitchenisland↔countertop` and `tvstand↔dresser`. EB reeval tasks expanded to
-`1 7 19 22 25 28 29 37`.
+**Hotfix:** compact `ontable` abstain; Align `kitchenisland↔countertop`, `tvstand↔dresser`.
+EB paraphrase reeval queued for `{1,7,19,22,25,28,29,37}` after EB seals.
 
 Refs: Align AW 0.84 / EB 0.80; Align+USR EB 0.78.

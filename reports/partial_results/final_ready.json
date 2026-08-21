@@ -1,0 +1,18 @@
+{
+  "ready": false,
+  "aw": {
+    "n": 29,
+    "SR": 0.7931034482758621
+  },
+  "eb": {
+    "n": 44,
+    "SR": 0.7272727272727273
+  },
+  "baselines": {
+    "native_aw": 0.81,
+    "align_aw": 0.84,
+    "native_eb": 0.78,
+    "align_eb": 0.8,
+    "align_usr_eb": 0.78
+  }
+}

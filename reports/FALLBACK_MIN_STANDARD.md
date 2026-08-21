@@ -91,11 +91,14 @@ frozen during a run.
 | Brain l10-35 (separate line) | 0.94 | 0.80 |
 
 This branch reports **Align+USR+Skill** against Align+USR / Align / Native
-under the same AW OOD and EB base commands. New runs write to
-`runs/fallback_*` and must not touch frozen manifests.
+under the same AW OOD and EB base commands. Live sealed runs write to
+`/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt` (renamed away from
+`fallback_usr_skillopt` so V2 hard-coded quarantine paths miss them) and must
+not touch frozen manifests.
 
 ## 7. How to run
 
 See `training/launch_fallback_aw_ood.sh`, `training/launch_fallback_eb50.sh`,
-and `training/launch_fallback_skillopt.sh`. Server code lives in a **separate**
-directory from the V2 job: `/mnt/autodl_tmp1/zhuyanhao/code/RoboAgent_USR_SkillOpt`.
+`training/launch_fallback_skillopt.sh`, and `training/fallback_keep_alive.sh`.
+Server code lives in a **separate** directory from the V2 job:
+`/mnt/autodl_tmp1/zhuyanhao/code/RoboAgent_USR_SkillOpt`.
