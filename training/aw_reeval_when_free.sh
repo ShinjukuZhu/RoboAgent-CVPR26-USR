@@ -163,7 +163,13 @@ r=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
 main=r/"usr_fb_aw_ood-eval_out_of_distribution/results.jsonl"
 rows={int(json.loads(x)["task_idx"]):json.loads(x) for x in main.read_text().splitlines() if x.strip()} if main.exists() else {}
 miss=[i for i in range(134) if i not in rows]
-fails=[i for i,r in rows.items() if int(r.get("SR") or 0)==0]
+fails=[i for i,row in rows.items() if int(row.get("SR") or 0)==0]
+# Prefer hang/watchdog stubs first — they depressed SR and are most recoverable.
+def _stub_rank(tid):
+    row=rows[tid]
+    blob=(str(row.get("note",""))+" "+str(row.get("error",""))).lower()
+    return (0 if any(k in blob for k in ("stub","timeout","hang","watchdog")) else 1, tid)
+fails=sorted(fails, key=_stub_rank)
 print(len(miss))
 print(" ".join(map(str, miss[:1])))
 print(len(fails))
