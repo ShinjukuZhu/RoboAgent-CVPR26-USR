@@ -13,8 +13,8 @@ EB_DATA=$EB_ROOT/embodiedbench/envs/eb_alfred/data/splits/splits.json
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
 GPU=${GPU:-5}
 DISPLAY_NUM=${DISPLAY_NUM:-97}
-# Tasks failed with false grounding rejects (fridge/remote/table/soap/rack).
-TASKS=${TASKS:-"1 7 19 22 28 29"}
+# Tasks failed with false grounding rejects (table/fridge/remote/soap/island/tvstand).
+TASKS=${TASKS:-"1 7 19 22 25 28 29 37"}
 OUT=$RUN/eb_paraphrase_reeval
 mkdir -p "$OUT" "$RUN/logs"
 cd "$CODE"

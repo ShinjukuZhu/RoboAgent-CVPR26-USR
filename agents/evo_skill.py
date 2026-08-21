@@ -87,6 +87,7 @@ DEFAULT_ALIASES = {
     "kitchen table": "diningtable",
     "wooden table": "diningtable",
     "on the table": "diningtable",
+    "on table": "diningtable",
     "table": "diningtable",
     "fridge": "fridge",
     "refrigerator": "fridge",
@@ -102,6 +103,14 @@ DEFAULT_ALIASES = {
     "metal rack": "shelf",
     "metalrack": "shelf",
     "rack": "shelf",
+    # Align/EB receptacle paraphrases (skill_alignment maps these the same way).
+    "kitchen island": "countertop",
+    "kitchenisland": "countertop",
+    "island": "countertop",
+    "tv stand": "dresser",
+    "tvstand": "dresser",
+    "television stand": "dresser",
+    "televisionstand": "dresser",
 }
 
 # Compact-form clusters: paraphrases of one class, not distinct fixtures.
@@ -109,11 +118,13 @@ RECEPTACLE_PARAPHRASE_CLUSTERS = (
     frozenset({"diningtable", "kitchentable", "woodentable", "dinnertable", "table"}),
     frozenset({"garbagecan", "trashcan", "rubbishbin"}),
     frozenset({"sofa", "couch"}),
-    frozenset({"tvstand", "televisionstand"}),
+    # Align remap: tvstand → Dresser on EB.
+    frozenset({"tvstand", "televisionstand", "dresser"}),
     frozenset({"fridge", "refrigerator"}),
     frozenset({"shelf", "metalrack", "rack", "shelving"}),
     frozenset({"soapbar", "barofsoap"}),
     frozenset({"remotecontrol", "tvremote", "remote"}),
+    frozenset({"countertop", "kitchenisland", "island"}),
 )
 
 
@@ -477,6 +488,14 @@ class EffectVerifiedSkill:
         text = re.sub(r"\([^)]*\)", " ", raw)
         text = re.sub(r"\s+", " ", text).strip()
         if not text:
+            return False
+        # Compact tokens like "ontable" lose word boundaries; treat them as
+        # location role hints rather than hard class IDs.
+        compact = _compact(text)
+        if re.fullmatch(
+            r"(on|in|at|near|under|onto|into)(the)?(table|counter|shelf|floor|ground|desk)",
+            compact,
+        ):
             return False
         abstract = (
             r"\b(some|any|suitable|appropriate|available)\b",

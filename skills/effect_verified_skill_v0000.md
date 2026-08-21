@@ -31,6 +31,7 @@ leave implicit, but that individual systems already demonstrated:
     "dinner table": "diningtable",
     "dining table": "diningtable",
     "on the table": "diningtable",
+    "on table": "diningtable",
     "refrigerator": "fridge",
     "fridge": "fridge",
     "bar of soap": "soapbar",
@@ -39,6 +40,8 @@ leave implicit, but that individual systems already demonstrated:
     "remote control": "remotecontrol",
     "remote": "remotecontrol",
     "metal rack": "shelf",
+    "kitchen island": "countertop",
+    "tv stand": "dresser",
     "apple sliced": "apple",
     "bread sliced": "bread",
     "lettuce sliced": "lettuce",
@@ -53,9 +56,10 @@ leave implicit, but that individual systems already demonstrated:
 - Environment success is recorded as progress only after the simulator confirms it.
 - A clear requested-object / returned-object conflict is treated as not-found.
 - Instruction paraphrases (kitchen/wooden table, fridge/refrigerator, tv remote,
-  bar of soap, metal rack/shelf) are compatible; coffee/side tables and
-  tv-stand vs dresser remain distinct.
-- Location phrases such as "on the table" abstain from hard class matching.
+  bar of soap, metal rack/shelf, kitchen island/countertop, tv stand/dresser)
+  are compatible; coffee/side tables remain distinct from dining table.
+- Location phrases such as "on the table" / compact "ontable" abstain from hard
+  class matching.
 - Functional queries such as "some tool for cooling" are not forced into a
   literal object-class match.
 - Repeated missing effects invalidate the remaining ability-buffer suffix.

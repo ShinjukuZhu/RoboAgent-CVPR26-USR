@@ -86,6 +86,23 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         )
         self.assertEqual(restored, [{"label": "DiningTable"}])
         self.assertIsNone(intervention)
+        # Compact planner tokens like "ontable" must not hard-reject.
+        restored, intervention = skill.validate_grounding(
+            "ontable", [{"label": "DiningTable"}]
+        )
+        self.assertEqual(restored, [{"label": "DiningTable"}])
+        self.assertIsNone(intervention)
+
+    def test_align_receptacle_paraphrases(self):
+        skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
+        _, intervention = skill.validate_grounding(
+            "kitchen island", [{"label": "CounterTop"}]
+        )
+        self.assertIsNone(intervention)
+        _, intervention = skill.validate_grounding(
+            "tvstand", [{"label": "Dresser"}]
+        )
+        self.assertIsNone(intervention)
 
     def test_effect_predicate_target_abstains(self):
         skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
