@@ -477,6 +477,8 @@ class EffectVerifiedSkill:
             # Location phrases are role hints, not hard class IDs.
             r"^(on|in|at|near|under|onto|into)\b",
             r"\b(on|in|at)\s+the\s+(table|counter|shelf|floor|ground)\b",
+            # Effect predicates must never be treated as object class requests.
+            r"^(open|closed|holding|placed|at|on|off|clean|heated|cooled|sliced)\(",
         )
         return not any(re.search(pattern, text) for pattern in abstract)
 

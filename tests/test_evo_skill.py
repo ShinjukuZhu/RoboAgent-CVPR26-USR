@@ -87,6 +87,14 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         self.assertEqual(restored, [{"label": "DiningTable"}])
         self.assertIsNone(intervention)
 
+    def test_effect_predicate_target_abstains(self):
+        skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
+        restored, intervention = skill.validate_grounding(
+            "closed(Cabinet 1)", [{"label": "Cabinet"}]
+        )
+        self.assertEqual(restored, [{"label": "Cabinet"}])
+        self.assertIsNone(intervention)
+
     def test_distinct_tables_still_conflict(self):
         skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
         restored, intervention = skill.validate_grounding(
