@@ -45,7 +45,14 @@ ensure_display() {
 
 run_one_task() {
   local gpu=$1 tid=$2 tag=$3
-  local disp=$((90 + gpu))
+  local disp
+  case "$gpu" in
+    1) disp=96 ;;
+    4) disp=94 ;;
+    6) disp=97 ;;
+    7) disp=95 ;;
+    *) disp=$((90 + gpu)) ;;
+  esac
   ensure_display "$disp"
   local out=$RUN/aw_fail_reeval_free/task_${tid}
   echo "$(date -Is) GPU$gpu run task $tid ($tag)" | tee -a "$LOG"
