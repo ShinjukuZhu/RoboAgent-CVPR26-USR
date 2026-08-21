@@ -17,3 +17,4 @@
 {"task_idx": 16, "GCR": 0.0, "SR": 0, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_16"}
 {"task_idx": 17, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_17"}
 {"task_idx": 18, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_18"}
+{"task_idx": 19, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/fallback_usr_skillopt/usr_fb_skillopt_dev-eval_in_distribution/episode_19"}

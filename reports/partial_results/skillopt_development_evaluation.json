@@ -1,0 +1,78 @@
+{
+  "metrics": {
+    "n": 20,
+    "task_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "successes": 13,
+    "SR": 0.65,
+    "mean_GCR": 0.7166666666666667
+  },
+  "unverified_event_counts": {
+    "perception_stale_after_world_change": 292,
+    "action_effect_check": 208,
+    "evo_suffix_invalidated": 170,
+    "grounding_effect_check": 23
+  },
+  "examples": {
+    "perception_stale_after_world_change": [
+      "take Plate 1 from DiningTable 1",
+      "cool Plate 1 with Fridge 1",
+      "cool Plate 1 with Fridge 1",
+      "open Cabinet 1",
+      "put Plate 1 to Cabinet 1",
+      "open Cabinet 11",
+      "put Plate 1 to Cabinet 11",
+      "put Plate 1 to Cabinet 11"
+    ],
+    "action_effect_check": [
+      "cool Plate 1 with Fridge 1",
+      "put Plate 1 to Cabinet 1",
+      "put Plate 1 to Cabinet 11",
+      "put Plate 1 to Cabinet 11",
+      "put Plate 1 to Cabinet 1",
+      "put Plate 1 to Cabinet 1",
+      "put Plate 1 to Cabinet 1",
+      "put Plate 1 to Cabinet 1"
+    ],
+    "evo_suffix_invalidated": [
+      "Expected effect was not verified after 2 attempt(s): placed(Plate 1 to Cabinet 11). Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
+      "Expected effect was not verified after 3 attempt(s): placed(Plate 1 to Cabinet 11). Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
+      "Expected effect was not verified after 4 attempt(s): placed(Plate 1 to Cabinet 1). Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
+      "Expected effect was not verified after 5 attempt(s): placed(Plate 1 to Cabinet 1). Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
+      "Grounding effect was rejected: requested 'closed(Cabinet 1)', but the Skill returned category 'cabinet'. Re-observe the requested object.",
+      "Expected effect was not verified after 6 attempt(s): placed(Plate 1 to Cabinet 1). Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
+      "Grounding effect was rejected: requested 'closed(Cabinet 1)', but the Skill returned category 'cabinet'. Re-observe the requested object.",
+      "Expected effect was not verified after 7 attempt(s): placed(Plate 1 to Cabinet 1). Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain."
+    ],
+    "grounding_effect_check": [
+      "Grounding effect was rejected: requested 'closed(Cabinet 1)', but the Skill returned category 'cabinet'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'closed(Cabinet 1)', but the Skill returned category 'cabinet'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'closed(Cabinet 1)', but the Skill returned category 'cabinet'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'closed(Cabinet 1)', but the Skill returned category 'cabinet'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'another watch (except: Dresser 1, DiningTable 1)', but the Skill returned category 'side table'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'another watch (except: Dresser 1, DiningTable 1)', but the Skill returned category 'side table'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'another watch (except: Dresser 1, DiningTable 1)', but the Skill returned category 'side table'. Re-observe the requested object.",
+      "Grounding effect was rejected: requested 'another spraybottle (except: Cabinet 2, Toilet 1)', but the Skill returned category 'toilet'. Re-observe the requested object."
+    ]
+  }
+}
