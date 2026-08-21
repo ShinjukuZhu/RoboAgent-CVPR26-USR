@@ -11,3 +11,4 @@
 {"task_idx": 30, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/selection_current/run-eval_in_distribution/episode_30"}
 {"task_idx": 31, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/selection_current/run-eval_in_distribution/episode_31"}
 {"task_idx": 32, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/selection_current/run-eval_in_distribution/episode_32"}
+{"task_idx": 33, "GCR": 1.0, "SR": 1, "valid_run": 1, "episode_dir": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/selection_current/run-eval_in_distribution/episode_33"}

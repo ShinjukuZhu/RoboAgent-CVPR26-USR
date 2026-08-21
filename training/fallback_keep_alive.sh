@@ -56,9 +56,10 @@ PY
 )
   [ "$n" -ge 50 ] && return 0
   pgrep -f "runs/usr_minstd_skillopt/usr_fb_eb50 " >/dev/null && return 0
+  pgrep -f "eb_finish_missing.sh" >/dev/null && return 0
   pgrep -f "eb_skip44_finish.sh" >/dev/null && return 0
-  echo "$(date -Is) relaunch EB helper (unique=$n)" >>"$LOG"
-  nohup bash "$CODE/training/eb_skip44_finish.sh" >>"$RUN/logs/eb_skip44_finish.log" 2>&1 &
+  echo "$(date -Is) relaunch EB finish_missing (unique=$n)" >>"$LOG"
+  nohup bash "$CODE/training/eb_finish_missing.sh" >>"$RUN/logs/eb_finish_missing.log" 2>&1 &
 }
 
 relaunch_skillopt() {
@@ -78,6 +79,24 @@ relaunch_skillopt() {
     >> "$RUN/logs/skillopt.log" 2>&1 &
 }
 
+ensure_marker() {
+  "$ENV_BIN/python" - <<'PY' >>"$LOG" 2>&1 || true
+import json
+from pathlib import Path
+r=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
+m=r/"USR_MINSTD_DO_NOT_TOUCH.json"
+payload={
+  "owner":"zhuyanhao",
+  "branch":"research/fallback-usr-skillopt",
+  "purpose":"fallback_min_standard_usr_skillopt",
+  "do_not_move":True,
+  "do_not_kill":True,
+}
+m.write_text(json.dumps(payload, indent=2)+"\n")
+print("marker ok")
+PY
+}
+
 echo "$(date -Is) keep_alive start" >>"$LOG"
 while true; do
   sleep 180
@@ -88,6 +107,7 @@ while true; do
     sleep 60
     continue
   fi
+  ensure_marker || true
   relaunch_aw || true
   relaunch_eb || true
   relaunch_skillopt || true
