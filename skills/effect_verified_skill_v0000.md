@@ -30,6 +30,15 @@ leave implicit, but that individual systems already demonstrated:
     "wooden table": "diningtable",
     "dinner table": "diningtable",
     "dining table": "diningtable",
+    "on the table": "diningtable",
+    "refrigerator": "fridge",
+    "fridge": "fridge",
+    "bar of soap": "soapbar",
+    "soap bar": "soapbar",
+    "tv remote": "remotecontrol",
+    "remote control": "remotecontrol",
+    "remote": "remotecontrol",
+    "metal rack": "shelf",
     "apple sliced": "apple",
     "bread sliced": "bread",
     "lettuce sliced": "lettuce",
@@ -43,11 +52,14 @@ leave implicit, but that individual systems already demonstrated:
 
 - Environment success is recorded as progress only after the simulator confirms it.
 - A clear requested-object / returned-object conflict is treated as not-found.
-- Instruction paraphrases of the same dining-table receptacle (kitchen/wooden/dinner)
-  are compatible; coffee/side tables remain distinct.
+- Instruction paraphrases (kitchen/wooden table, fridge/refrigerator, tv remote,
+  bar of soap, metal rack/shelf) are compatible; coffee/side tables and
+  tv-stand vs dresser remain distinct.
+- Location phrases such as "on the table" abstain from hard class matching.
 - Functional queries such as "some tool for cooling" are not forced into a
   literal object-class match.
 - Repeated missing effects invalidate the remaining ability-buffer suffix.
+- A single grounding mismatch requests replan but does not wipe the buffer.
 - Replanning receives confirmed progress only after an intervention.
 - After take/put/open/close/slice/heat/cool/clean, the last-goto grounding
   shortcut is disabled until the next real object-grounding call.

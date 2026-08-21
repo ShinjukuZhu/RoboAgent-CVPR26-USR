@@ -64,6 +64,29 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         )
         self.assertIsNone(intervention)
 
+    def test_fridge_and_remote_paraphrases(self):
+        skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
+        _, intervention = skill.validate_grounding(
+            "refrigerator", [{"label": "Fridge"}]
+        )
+        self.assertIsNone(intervention)
+        _, intervention = skill.validate_grounding(
+            "tv remote", [{"label": "RemoteControl"}]
+        )
+        self.assertIsNone(intervention)
+        _, intervention = skill.validate_grounding(
+            "bar of soap (hint: the shelves)", [{"label": "SoapBar"}]
+        )
+        self.assertIsNone(intervention)
+
+    def test_location_phrase_abstains(self):
+        skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
+        restored, intervention = skill.validate_grounding(
+            "on the table", [{"label": "DiningTable"}]
+        )
+        self.assertEqual(restored, [{"label": "DiningTable"}])
+        self.assertIsNone(intervention)
+
     def test_distinct_tables_still_conflict(self):
         skill = EffectVerifiedSkill(EvoSkillSpec.from_markdown(V0))
         restored, intervention = skill.validate_grounding(
@@ -71,6 +94,7 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         )
         self.assertFalse(restored)
         self.assertEqual(intervention.kind, "object_mismatch")
+        self.assertFalse(intervention.invalidate_suffix)
 
     def test_wrong_grounding_is_blocked_and_requests_replan(self):
         checked, intervention = self.runtime.validate_grounding(

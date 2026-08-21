@@ -86,14 +86,34 @@ DEFAULT_ALIASES = {
     "dining table": "diningtable",
     "kitchen table": "diningtable",
     "wooden table": "diningtable",
+    "on the table": "diningtable",
+    "table": "diningtable",
+    "fridge": "fridge",
+    "refrigerator": "fridge",
+    "bar of soap": "soapbar",
+    "barofsoap": "soapbar",
+    "soap bar": "soapbar",
+    "soapbar": "soapbar",
+    "tv remote": "remotecontrol",
+    "tvremote": "remotecontrol",
+    "remote": "remotecontrol",
+    "remote control": "remotecontrol",
+    "remotecontrol": "remotecontrol",
+    "metal rack": "shelf",
+    "metalrack": "shelf",
+    "rack": "shelf",
 }
 
-# Compact-form clusters: paraphrases of one receptacle class, not distinct fixtures.
+# Compact-form clusters: paraphrases of one class, not distinct fixtures.
 RECEPTACLE_PARAPHRASE_CLUSTERS = (
-    frozenset({"diningtable", "kitchentable", "woodentable", "dinnertable"}),
+    frozenset({"diningtable", "kitchentable", "woodentable", "dinnertable", "table"}),
     frozenset({"garbagecan", "trashcan", "rubbishbin"}),
     frozenset({"sofa", "couch"}),
     frozenset({"tvstand", "televisionstand"}),
+    frozenset({"fridge", "refrigerator"}),
+    frozenset({"shelf", "metalrack", "rack", "shelving"}),
+    frozenset({"soapbar", "barofsoap"}),
+    frozenset({"remotecontrol", "tvremote", "remote"}),
 )
 
 
@@ -340,7 +360,9 @@ class EffectVerifiedSkill:
         return False, SkillIntervention(
             kind="object_mismatch",
             reason=reason,
-            invalidate_suffix=self.spec.invalidate_stale_suffix,
+            # Do not wipe the ability buffer on a single grounding conflict:
+            # false paraphrase rejects were cascading into episode failures.
+            invalidate_suffix=False,
             replacement=False,
         )
 
@@ -452,6 +474,9 @@ class EffectVerifiedSkill:
             r"\b(tool|place|receptacle|container|appliance|surface)\s+(for|to)\b",
             r"\bsomewhere\b",
             r"\bwhere\s+to\b",
+            # Location phrases are role hints, not hard class IDs.
+            r"^(on|in|at|near|under|onto|into)\b",
+            r"\b(on|in|at)\s+the\s+(table|counter|shelf|floor|ground)\b",
         )
         return not any(re.search(pattern, text) for pattern in abstract)
 
