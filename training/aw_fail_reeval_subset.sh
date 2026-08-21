@@ -54,7 +54,7 @@ PY
     ROBOAGENT_LLMDET_PATH=$ROOT/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 \
     ROBOAGENT_EVO_SKILL=$SKILL \
     timeout "$TIMEOUT_SEC" python -u run_aw.py --qwen_path "$ROOT/ckpt/RoboAgent_CVPR26" \
-      --save_path "$OUT/task_${tid}" --split eval_out_of_distribution \
+      --save_path "$OUT/task_${tid}/run" --split eval_out_of_distribution \
       --start "$tid" --end $((tid+1)) --seed 42 \
     >> "$LOG" 2>&1
   rc=$?
@@ -63,16 +63,21 @@ PY
 import json
 from pathlib import Path
 tid=int("$tid")
-cand=Path("$OUT/task_${tid}/run-eval_out_of_distribution/results.jsonl")
+base=Path("$OUT/task_${tid}")
+cands=[base/"run-eval_out_of_distribution"/"results.jsonl", Path(str(base)+"-eval_out_of_distribution")/"results.jsonl"]
 main=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/results.jsonl")
 summary=Path("$OUT/summary.jsonl")
 row=None
-if cand.exists():
+for cand in cands:
+    if not cand.exists():
+        continue
     for line in cand.read_text().splitlines():
         if line.strip():
             r=json.loads(line)
             if int(r["task_idx"])==tid:
                 row=r; break
+    if row is not None:
+        break
 rec={"task_idx": tid, "rc": int("$rc"), "SR": None, "promoted": False}
 if row is not None:
     rec["SR"]=int(row.get("SR") or 0)
