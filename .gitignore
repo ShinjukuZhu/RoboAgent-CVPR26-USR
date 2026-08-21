@@ -1,3 +1,5 @@
 imgs
 Log
-__pycache__partial/
+__pycache__/
+runs/partial/
+*.pyc
