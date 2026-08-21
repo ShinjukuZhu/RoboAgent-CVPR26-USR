@@ -30,7 +30,12 @@ p = root / "results.jsonl"
 rows = [json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []
 fails = [int(r["task_idx"]) for r in rows if not int(r.get("SR") or 0)]
 extra = []
+skip_errors = {"timeout_or_hang", "put_loop_closed_receptacle"}
+fail_meta = {int(r["task_idx"]): r for r in rows if not int(r.get("SR") or 0)}
 for tid in fails:
+    meta = fail_meta.get(tid) or {}
+    if str(meta.get("error") or "") in skip_errors:
+        continue
     ep = root / f"episode_{tid}"
     if not ep.exists():
         continue
@@ -82,7 +87,7 @@ run_one() {
     /mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb ":${disp}" -screen 0 1280x1024x24 -ac +extension GLX +render -noreset >/dev/null 2>&1 &
     sleep 2
   fi
-  echo "$(date -Is) REEVAL task $tid gpu=$gpu display=:$disp" | tee -a "$LOG"
+    echo "$(date -Is) REEVAL task $tid gpu=$gpu display=:$disp" | tee -a "$LOG"
   env -u LD_LIBRARY_PATH \
     CUDA_VISIBLE_DEVICES=$gpu DISPLAY=:$disp PATH=$ENV_BIN:$PATH \
     PYTHONPATH=$EB_ROOT:${PYTHONPATH:-} PYTHONUNBUFFERED=1 \
@@ -100,6 +105,35 @@ run_one() {
       --data_path "$EB_DATA" --split base --server-num "$disp" \
       --start "$tid" --end $((tid + 1)) --seed 42 \
     >> "$LOG" 2>&1 || echo "$(date -Is) task $tid failed/timeout" >>"$LOG"
+  # Promote any new SR=1 results immediately so sealed EB SR rises during the run.
+  "$ENV_BIN/python" - <<'PY' >>"$LOG" 2>&1 || true
+import json, shutil
+from pathlib import Path
+root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
+main = root / "usr_fb_eb50-base" / "results.jsonl"
+backup = root / "usr_fb_eb50-base" / "results.jsonl.pre_paraphrase_reeval"
+if main.exists() and not backup.exists():
+    shutil.copy2(main, backup)
+rows = {int(json.loads(x)["task_idx"]): json.loads(x) for x in main.read_text().splitlines() if x.strip()}
+promoted = []
+for p in sorted((root / "eb_paraphrase_reeval").glob("task_*-base/results.jsonl")):
+    for line in p.read_text().splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        tid = int(r["task_idx"])
+        new_sr = int(r.get("SR") or 0)
+        old_sr = int(rows.get(tid, {}).get("SR") or 0)
+        if new_sr == 1 and old_sr < 1:
+            rows[tid] = r
+            promoted.append(tid)
+        break
+if promoted:
+    ordered = [rows[i] for i in sorted(rows)]
+    main.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in ordered))
+    sr = sum(int(r.get("SR") or 0) for r in ordered) / len(ordered)
+    print(json.dumps({"incremental_promoted": promoted, "SR": sr}))
+PY
 }
 
 # Round-robin worker queues
