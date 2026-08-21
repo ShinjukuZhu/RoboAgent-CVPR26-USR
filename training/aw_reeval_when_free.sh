@@ -14,6 +14,10 @@ LOG=$RUN/logs/aw_reeval_when_free.log
 mkdir -p "$RUN/logs"
 
 pick_gpu() {
+  if [ -n "${FORCE_GPU:-}" ]; then
+    echo "$FORCE_GPU 99999"
+    return 0
+  fi
   "$ENV_BIN/python" - <<PY
 import subprocess
 need=int("$NEED_MIB")

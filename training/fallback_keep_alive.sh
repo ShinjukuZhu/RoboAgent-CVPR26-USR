@@ -38,11 +38,12 @@ PY
 )
   [ "$unique" -ge 134 ] && return 0
   pgrep -f "aw_range_watchdog.sh" >/dev/null && return 0
-  pgrep -f "usr_fb_aw_ood_wd_" >/dev/null && return 0
+  pgrep -f "aw_reeval_when_free.sh" >/dev/null && return 0
   pgrep -f "aw_fill_missing.sh" >/dev/null && return 0
   pgrep -f "runs/usr_minstd_skillopt/usr_fb_aw_ood " >/dev/null && return 0
-  echo "$(date -Is) relaunch AW watchdogs (unique=$unique)" >>"$LOG"
-  nohup bash "$CODE/training/aw_launch_watchdogs.sh" >>"$RUN/logs/aw_launch_watchdogs.log" 2>&1 &
+  echo "$(date -Is) relaunch AW when-free waiter (unique=$unique)" >>"$LOG"
+  nohup env NEED_MIB=38000 POLL_SEC=60 \
+    bash "$CODE/training/aw_reeval_when_free.sh" >>"$RUN/logs/aw_reeval_when_free.log" 2>&1 &
 }
 
 relaunch_eb() {
