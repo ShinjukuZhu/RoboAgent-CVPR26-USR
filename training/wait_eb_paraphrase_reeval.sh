@@ -26,6 +26,12 @@ PY
       sleep 60
       continue
     fi
+    if pgrep -f "reeval_eb_paraphrase_fails.sh" >/dev/null \
+      || pgrep -f "eb_paraphrase_reeval/task_" >/dev/null; then
+      echo "$(date -Is) paraphrase reeval already running" >> "$RUN/logs/eb_reeval_waiter.log"
+      sleep 120
+      continue
+    fi
     if [ -f "$RUN/eb_paraphrase_reeval_summary.json" ]; then
       echo "$(date -Is) already done" >> "$RUN/logs/eb_reeval_waiter.log"
       exit 0
