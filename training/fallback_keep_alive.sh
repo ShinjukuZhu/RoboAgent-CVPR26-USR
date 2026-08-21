@@ -24,16 +24,25 @@ relaunch_aw() {
   unique=$("$ENV_BIN/python" - <<'PY'
 import json
 from pathlib import Path
-p=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/results.jsonl")
-ids={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()} if p.exists() else set()
+root=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
+ids=set()
+for p in [root/"usr_fb_aw_ood-eval_out_of_distribution/results.jsonl"]:
+    if p.exists():
+        ids|={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()}
+for pat in ("usr_fb_aw_ood_shard_*/run-eval_out_of_distribution/results.jsonl",
+            "usr_fb_aw_ood_wd_*/run-eval_out_of_distribution/results.jsonl"):
+    for p in root.glob(pat):
+        ids|={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()}
 print(len(ids))
 PY
 )
   [ "$unique" -ge 134 ] && return 0
-  pgrep -f "runs/usr_minstd_skillopt/usr_fb_aw_ood " >/dev/null && return 0
+  pgrep -f "aw_range_watchdog.sh" >/dev/null && return 0
+  pgrep -f "usr_fb_aw_ood_wd_" >/dev/null && return 0
   pgrep -f "aw_fill_missing.sh" >/dev/null && return 0
-  echo "$(date -Is) relaunch AW fill_missing (unique=$unique)" >>"$LOG"
-  nohup bash "$CODE/training/aw_fill_missing.sh" >>"$RUN/logs/aw_fill_missing.log" 2>&1 &
+  pgrep -f "runs/usr_minstd_skillopt/usr_fb_aw_ood " >/dev/null && return 0
+  echo "$(date -Is) relaunch AW watchdogs (unique=$unique)" >>"$LOG"
+  nohup bash "$CODE/training/aw_launch_watchdogs.sh" >>"$RUN/logs/aw_launch_watchdogs.log" 2>&1 &
 }
 
 relaunch_eb() {

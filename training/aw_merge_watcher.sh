@@ -20,15 +20,20 @@ if main.exists():
             r = json.loads(line)
             rows[int(r["task_idx"])] = r
 added = []
-for shard in sorted(root.glob("usr_fb_aw_ood_shard_*/run-eval_out_of_distribution/results.jsonl")):
-    for line in shard.read_text().splitlines():
-        if not line.strip():
-            continue
-        r = json.loads(line)
-        tid = int(r["task_idx"])
-        if tid not in rows:
-            rows[tid] = r
-            added.append(tid)
+patterns = [
+    "usr_fb_aw_ood_shard_*/run-eval_out_of_distribution/results.jsonl",
+    "usr_fb_aw_ood_wd_*/run-eval_out_of_distribution/results.jsonl",
+]
+for pat in patterns:
+    for shard in sorted(root.glob(pat)):
+        for line in shard.read_text().splitlines():
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            tid = int(r["task_idx"])
+            if tid not in rows:
+                rows[tid] = r
+                added.append(tid)
 if added:
     ordered = [rows[i] for i in sorted(rows)]
     main.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in ordered))

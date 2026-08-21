@@ -28,7 +28,7 @@ Keep **skill_v0000** (seed). History: `partial_results/skillopt_history.jsonl`.
 
 | Track | Status |
 |---|---|
-| AW OOD | hang-safe fill mid-gap (GPU1 + GPU4); shard 70–90 (GPU7); hang-safe 90–134 (GPU6) |
+| AW OOD | 4× range watchdogs (54–62 / 62–70 / 74–90 / 91–134); rebalance splits tail when mid frees |
 
 ## Skill contracts landed on USR
 
