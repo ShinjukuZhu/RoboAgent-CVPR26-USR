@@ -1,12 +1,14 @@
 # Fallback partial results (in-progress)
 
-Server `usr_fb_*` + effect-verified Skill (paraphrase fix deployed; EB resumed at 32).
+| Split | n / target | SR so far |
+|---|---|---|
+| AW OOD | 21 / 134 | 0.857 |
+| EB base | 37 / 50 | 0.703 |
+| SkillOpt D_tr | 20 / 20 | 0.650 |
+| SkillOpt D_sel baseline | 2 / 20 | 1.000 |
 
-| Split | n / target | SR so far | Notes |
-|---|---|---|---|
-| AW OOD | 20 / 134 | 0.900 | vs Align 0.84 |
-| EB base | 35 / 50 | 0.686 | vs Align+USR 0.78; post-32 uses relaxed grounding |
-| SkillOpt D_tr | 19 / 20 | 0.632 | evolve starts at n≥20 |
+Refs: Align AW 0.84 / EB 0.80; Align+USR EB 0.78.
 
-Paraphrase re-eval of fails {1,7,19,22,28,29} armed after EB50 completes.
-Git pushes use Clash Verge mixed proxy `127.0.0.1:7897`.
+Recent Skill fixes (hot on EB resume ≥37): paraphrase aliases, no buffer wipe on
+object mismatch, abstain on location phrases and effect predicates like `closed(...)`.
+SkillOpt evolve is running baseline D_sel on GPU6; paraphrase re-eval armed after EB50.
