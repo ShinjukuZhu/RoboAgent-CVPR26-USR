@@ -42,6 +42,7 @@ PY
   set -e
   if [[ $status -eq 0 ]]; then
     echo "FINAL_READY $(date -Is)" | tee -a "$RUN/logs/finalize.log"
+    bash "$CODE/training/finalize_fallback_results.sh" | tee -a "$RUN/logs/finalize.log"
     exit 0
   fi
   sleep 300

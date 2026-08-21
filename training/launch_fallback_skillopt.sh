@@ -41,10 +41,11 @@ if [[ "$n_done" -lt 20 ]]; then
     >> "$DEV_LOG" 2>&1
 fi
 
-SEL_CMD='env -u LD_LIBRARY_PATH CUDA_VISIBLE_DEVICES='$GPU' DISPLAY=:'$DISPLAY_NUM' ALFWORLD_DATA='$ALFWORLD_DATA' PATH='$ENV_BIN':$PATH PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True FALLBACK_USR_SKILLOPT_AUTHORIZED=1 ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 ROBOAGENT_LLMDET_PATH='$ROOT'/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 ROBOAGENT_EVO_SKILL={skill} python -u run_aw.py --qwen_path '"$CKPT"' --save_path {output}/run --split eval_in_distribution --start 20 --end 40 --seed 42'
+# Absolute paths: selection subprocess must not depend on caller cwd.
+SEL_CMD='cd '"$CODE"' && env -u LD_LIBRARY_PATH CUDA_VISIBLE_DEVICES='$GPU' DISPLAY=:'$DISPLAY_NUM' ALFWORLD_DATA='$ALFWORLD_DATA' PATH='$ENV_BIN':$PATH PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True FALLBACK_USR_SKILLOPT_AUTHORIZED=1 ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 ROBOAGENT_LLMDET_PATH='$ROOT'/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 ROBOAGENT_EVO_SKILL={skill} '"$ENV_BIN"'/python -u '"$CODE"'/run_aw.py --qwen_path '"$CKPT"' --save_path {output}/run --split eval_in_distribution --start 20 --end 40 --seed 42'
 
 nohup env -u LD_LIBRARY_PATH PATH=$ENV_BIN:$PATH PYTHONUNBUFFERED=1 FALLBACK_USR_SKILLOPT_AUTHORIZED=1 \
-  python -u training/skillopt_evolve.py \
+  "$ENV_BIN/python" -u "$CODE/training/skillopt_evolve.py" \
     --initial-skill "$SKILL" \
     --development-run "$DEV_DIR" \
     --output "$RUN/skillopt" \
