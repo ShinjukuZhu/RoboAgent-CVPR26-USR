@@ -29,7 +29,48 @@ EDITABLE_FIELDS = {
     "grounding_contract_mode",
     "skip_feedback_mode",
     "invalidate_perception_after_world_change",
+    "block_nonpickupable_take",
 }
+
+# ALFRED / AI2-THOR classes that cannot be inventory objects. Taking them is a
+# grounding failure seen across RoboAgent and most 2026 agents (microwave /
+# countertop / toaster loops). EmbodiSkill-style identity contract.
+NON_PICKUPABLE_CLASSES = frozenset(
+    {
+        "microwave",
+        "fridge",
+        "refrigerator",
+        "cabinet",
+        "drawer",
+        "countertop",
+        "sink",
+        "sinkbasin",
+        "stoveburner",
+        "toaster",
+        "coffeemachine",
+        "garbagecan",
+        "shelf",
+        "sidetable",
+        "diningtable",
+        "coffeetable",
+        "dresser",
+        "sofa",
+        "bed",
+        "toilet",
+        "bathtubbasin",
+        "laundryhamper",
+        "safe",
+        "desk",
+        "armchair",
+        "ottoman",
+        "tvstand",
+        "televisionstand",
+        "floorlamp",
+        "desklamp",
+        "lightswitch",
+        "faucet",
+    }
+)
 
 WORLD_CHANGE_PREFIXES = (
     "take ",
@@ -154,6 +195,7 @@ class EvoSkillSpec:
     grounding_contract_mode: str = "referential_only"
     skip_feedback_mode: str = "virtual_success"
     invalidate_perception_after_world_change: bool = True
+    block_nonpickupable_take: bool = True
     aliases: Dict[str, str] = field(default_factory=dict)
     source_path: str = ""
     sha256: str = ""
@@ -216,6 +258,7 @@ class EvoSkillSpec:
             invalidate_perception_after_world_change=bool(
                 raw.get("invalidate_perception_after_world_change", True)
             ),
+            block_nonpickupable_take=bool(raw.get("block_nonpickupable_take", True)),
             aliases=aliases,
             source_path=str(source.resolve()),
             sha256=digest,
@@ -257,6 +300,7 @@ class EvoSkillSpec:
             "grounding_contract_mode": self.grounding_contract_mode,
             "skip_feedback_mode": self.skip_feedback_mode,
             "invalidate_perception_after_world_change": self.invalidate_perception_after_world_change,
+            "block_nonpickupable_take": self.block_nonpickupable_take,
             # Preserve instruction paraphrases across SkillOpt candidate writes.
             "aliases": dict(self.aliases),
         }
@@ -322,6 +366,9 @@ class EffectVerifiedSkill:
         self.perception_stale = False
 
     def precheck_action(self, action: str) -> Optional[SkillIntervention]:
+        blocked = self._precheck_nonpickupable_take(action)
+        if blocked is not None:
+            return blocked
         if not self.spec.skip_confirmed_effects:
             return None
         effect = self._expected_effect(action)
@@ -339,6 +386,43 @@ class EffectVerifiedSkill:
             skipped=True,
         )
         return SkillIntervention(kind="effect_already_satisfied", reason=reason)
+
+    def _precheck_nonpickupable_take(self, action: str) -> Optional[SkillIntervention]:
+        if not self.spec.block_nonpickupable_take:
+            return None
+        obj = self._parse_take_object(action)
+        if not obj:
+            return None
+        cls = self.spec.canonical_object(obj)
+        if cls not in NON_PICKUPABLE_CLASSES:
+            return None
+        reason = (
+            f"Blocked take of non-pickupable class {cls!r} from action {action!r}. "
+            "Re-observe and take a portable object, not a receptacle/appliance."
+        )
+        self._request_replan(reason)
+        self._trace(
+            "action_precondition_check",
+            action=action,
+            blocked_nonpickupable=cls,
+            skipped=True,
+        )
+        return SkillIntervention(
+            kind="nonpickupable_take",
+            reason=reason,
+            invalidate_suffix=True,
+        )
+
+    @staticmethod
+    def _parse_take_object(action: str) -> str:
+        low = str(action or "").strip().lower()
+        m = re.match(
+            r"^(?:take|pick(?:\s+up)?)\s+(.+?)(?:\s+from\s+.+)?$",
+            low,
+        )
+        if not m:
+            return ""
+        return m.group(1).strip()
 
     def validate_grounding(self, target: str, result: Any) -> Tuple[Any, Optional[SkillIntervention]]:
         self.note_fresh_grounding()

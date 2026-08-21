@@ -416,6 +416,16 @@ class Agent(object):
         intervention = self._evo_skill.precheck_action(action)
         if intervention is None:
             return False
+        if intervention.kind == "nonpickupable_take":
+            append_trace(self.save_path, {
+                "event": "evo_blocked_nonpickupable_take",
+                "action": action,
+                "reason": intervention.reason,
+            })
+            self._activate_evo_intervention(
+                intervention.reason, intervention.invalidate_suffix
+            )
+            return True
         append_trace(self.save_path, {
             "event": "evo_redundant_action_skipped",
             "action": action,

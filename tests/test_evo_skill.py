@@ -34,6 +34,7 @@ class EvoSkillSpecTest(unittest.TestCase):
 
     def test_editable_fields_do_not_include_executor_code(self):
         self.assertIn("invalidate_perception_after_world_change", EDITABLE_FIELDS)
+        self.assertIn("block_nonpickupable_take", EDITABLE_FIELDS)
         self.assertNotIn("aliases", EDITABLE_FIELDS)
         self.assertNotIn("schema_version", EDITABLE_FIELDS)
 
@@ -163,6 +164,16 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         intervention = self.runtime.precheck_action("open the Fridge 1")
         self.assertIsNotNone(intervention)
         self.assertEqual(intervention.kind, "effect_already_satisfied")
+
+    def test_blocks_nonpickupable_take(self):
+        intervention = self.runtime.precheck_action("take Microwave 1 from Microwave 1")
+        self.assertIsNotNone(intervention)
+        self.assertEqual(intervention.kind, "nonpickupable_take")
+        self.assertTrue(intervention.invalidate_suffix)
+        intervention = self.runtime.precheck_action("take CounterTop 1 from Toaster 1")
+        self.assertEqual(intervention.kind, "nonpickupable_take")
+        # Portable objects still allowed.
+        self.assertIsNone(self.runtime.precheck_action("take Apple 1 from CounterTop 1"))
 
 
 if __name__ == "__main__":

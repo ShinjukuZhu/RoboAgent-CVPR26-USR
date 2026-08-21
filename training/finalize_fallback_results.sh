@@ -77,6 +77,16 @@ aw_sr, eb_sr = payload["aw"]["SR"], payload["eb"]["SR"]
 beats_aw = aw_sr is not None and aw_sr >= 0.84
 beats_eb = eb_sr is not None and eb_sr >= 0.78
 beats_align_eb = eb_sr is not None and eb_sr >= 0.80
+hist_rows = payload.get("skillopt_history") or []
+if hist_rows:
+    lines = ["| Round | Decision | Reason |", "|---|---|---|"]
+    for row in hist_rows:
+        lines.append(
+            f"| {row.get('round')} | **{row.get('decision')}** | {row.get('reason','')} |"
+        )
+    skillopt_block = "\n".join(lines)
+else:
+    skillopt_block = "See `reports/partial_results/skillopt_history.jsonl` when present."
 md = f"""# Fallback final results
 
 Protocol: RoboAgent official AW `eval_out_of_distribution` (0–133) and
@@ -98,14 +108,16 @@ EB vs Align: {"PASS (≥0.80)" if beats_align_eb else "BELOW Align 0.80"}
 
 ## SkillOpt
 
-See `reports/partial_results/skillopt_history.jsonl` when present.
 Gate: ACCEPT only on strict held-out selection SR increase.
+
+{skillopt_block}
 
 ## Artifacts
 
 - `reports/partial_results/usr_fb_aw_ood.jsonl`
 - `reports/partial_results/usr_fb_eb50.jsonl`
 - `reports/partial_results/usr_fb_skillopt_dev.jsonl`
+- `reports/partial_results/skillopt_history.jsonl`
 """
 (out / "FALLBACK_FINAL_RESULTS.md").write_text(md)
 print("WROTE", out / "FALLBACK_FINAL_RESULTS.md")

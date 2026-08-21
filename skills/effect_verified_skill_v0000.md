@@ -24,6 +24,7 @@ leave implicit, but that individual systems already demonstrated:
   "grounding_contract_mode": "referential_only",
   "skip_feedback_mode": "virtual_success",
   "invalidate_perception_after_world_change": true,
+  "block_nonpickupable_take": true,
   "recovery_instruction": "Re-observe the current view, preserve confirmed progress, and replan only the unfinished suffix. Do not repeat the invalidated action chain.",
   "aliases": {
     "kitchen table": "diningtable",
@@ -71,3 +72,5 @@ leave implicit, but that individual systems already demonstrated:
 - Replanning receives confirmed progress only after an intervention.
 - After take/put/open/close/slice/heat/cool/clean, the last-goto grounding
   shortcut is disabled until the next real object-grounding call.
+- Taking a non-pickupable receptacle/appliance (microwave, countertop, sink, …)
+  is blocked and forces suffix replan (identity contract).
