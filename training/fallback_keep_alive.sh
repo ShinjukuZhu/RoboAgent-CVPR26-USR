@@ -65,8 +65,12 @@ PY
 relaunch_skillopt() {
   local n
   n=$(wc -l < "$RUN/skillopt/selection_current/run-eval_in_distribution/results.jsonl" 2>/dev/null | tr -d ' ' || echo 0)
+  if [ -f "$RUN/skillopt/runtime_state.json" ]; then
+    return 0
+  fi
   [ -f "$RUN/skillopt/history.jsonl" ] && [ "$(wc -l < "$RUN/skillopt/history.jsonl" | tr -d ' ')" -ge 1 ] && [ "$n" -ge 20 ] && return 0
   pgrep -f "skillopt_evolve.py .*usr_minstd_skillopt" >/dev/null && return 0
+  pgrep -f "seal_skillopt_after_round1.sh" >/dev/null && return 0
   ensure_xvfb 98
   echo "$(date -Is) relaunch SkillOpt (sel_n=$n)" >>"$LOG"
   SEL_CMD="cd $CODE && env -u LD_LIBRARY_PATH CUDA_VISIBLE_DEVICES=4 DISPLAY=:98 ALFWORLD_DATA=$ROOT/data/alfworld PATH=$ENV_BIN:\$PATH PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True FALLBACK_USR_SKILLOPT_AUTHORIZED=1 ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 ROBOAGENT_LLMDET_PATH=$ROOT/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 ROBOAGENT_EVO_SKILL={skill} $ENV_BIN/python -u $CODE/run_aw.py --qwen_path $ROOT/ckpt/RoboAgent_CVPR26 --save_path {output}/run --split eval_in_distribution --start 20 --end 40 --seed 42"
