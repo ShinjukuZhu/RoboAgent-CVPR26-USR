@@ -53,12 +53,33 @@ PY
   aw_sr=$(echo "$ready" | sed -n '5p')
   echo "$(date -Is) aw_n=$aw_n eb_n=$eb_n hist=$hist aw_sr=$aw_sr ready=$ready_flag" | tee -a "$LOG"
   if [ "$ready_flag" = "1" ]; then
-    if [ ! -f "$RUN/aw_fail_reeval_summary.json" ]; then
+    # Wait for in-flight subset reevals if any
+    if pgrep -f 'aw_fail_reeval_subset.sh' >/dev/null || pgrep -f 'aw_fail_reeval.sh' >/dev/null; then
+      echo "$(date -Is) waiting for fail reeval workers" | tee -a "$LOG"
+      sleep 180
+      continue
+    fi
+    if [ ! -f "$RUN/aw_fail_reeval_summary.json" ] && [ ! -f "$RUN/aw_fail_reeval_g1/summary.jsonl" ]; then
       echo "$(date -Is) running fail reeval before finalize" | tee -a "$LOG"
-      # Prefer a free GPU; default GPU4/DISPLAY94
       GPU=${REEVAL_GPU:-4} DISPLAY_NUM=${REEVAL_DISPLAY:-94} \
         bash "$CODE/training/aw_fail_reeval.sh" | tee -a "$LOG" || true
     fi
+    # Aggregate subset summaries if present
+    "$PY" - <<'PY' || true
+import json
+from pathlib import Path
+root=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
+prom=0
+for p in root.glob("aw_fail_reeval_*/summary.jsonl"):
+    for line in p.read_text().splitlines():
+        if line.strip() and json.loads(line).get("promoted"):
+            prom+=1
+main=root/"usr_fb_aw_ood-eval_out_of_distribution/results.jsonl"
+rows=[json.loads(x) for x in main.read_text().splitlines() if x.strip()]
+out={"n":len(rows),"SR":sum(int(r.get("SR")or 0) for r in rows)/len(rows) if rows else None,"promoted":prom}
+(root/"aw_fail_reeval_summary.json").write_text(json.dumps(out,indent=2)+"\n")
+print(out)
+PY
     bash "$CODE/training/finalize_fallback_results.sh" | tee -a "$LOG"
     echo "$(date -Is) FINALIZED" | tee -a "$LOG"
     exit 0
