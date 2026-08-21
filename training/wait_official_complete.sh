@@ -3,6 +3,7 @@
 set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
 RUN=$ROOT/runs/fallback_usr_skillopt
+CODE=$ROOT/code/RoboAgent_USR_SkillOpt
 while true; do
   set +e
   /mnt/autodl_tmp1/zhuyanhao/envs/RoboAgent_AW/bin/python - <<'PY'
