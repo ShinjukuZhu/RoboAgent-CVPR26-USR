@@ -81,6 +81,37 @@ class SkillChannel:
     def get_usr(self, skill: str) -> Optional[Dict[str, Any]]:
         return json.loads(json.dumps(self._usr[skill])) if skill in self._usr else None
 
+    def has(self, skill: str) -> bool:
+        return skill in self._usr
+
+    def get_field(self, skill: str, field: str) -> Any:
+        """Compatibility shim used by Align+USR agent paths.
+
+        Accepts either a full dotted public path or a short alias such as
+        ``object.class`` / ``found``.
+        """
+        aliases = {
+            "object.class": "environment_facts.object.class",
+            "object.state": "environment_facts.object.state",
+            "location.target": "environment_facts.location.target",
+            "location.receptacle": "environment_facts.location.receptacle",
+            "found": "decision_signals.found",
+            "confidence": "decision_signals.confidence",
+            "role": "task_semantics.role",
+            "description": "environment_facts.description",
+            "relations": "environment_facts.relations",
+        }
+        path = aliases.get(field, field)
+        return self.consume(skill, path)
+
+    def log_decision(self, skill: str, decision: Any) -> None:
+        self._audit.append({
+            "skill": skill,
+            "event": "decision",
+            "decision": str(decision),
+            "ts": time.time(),
+        })
+
     # ---- contract audit (machine-readable) ----
     def contract_audit(self) -> list:
         """Return per-skill-call audit records."""

@@ -142,19 +142,19 @@ class Agent(object):
             if os.environ.get("ROBOAGENT_USR_CHANNEL", "0") == "1":
                 try:
                     ch = get_channel()
-                    og = dict(ch._usr.get("og") or {})
-                    temporal = dict(og.get("temporal_context") or {})
-                    temporal["observation_version"] = self.observation_version
-                    extra = dict(og.get("skill_specific") or {})
-                    extra["confirmed_progress"] = list(self._evo_skill.confirmed_effects)
-                    extra["last_effect"] = {
-                        "expected": self._evo_skill.expected_effect(last_action),
-                        "verified": bool(message),
-                    }
+                    og = ch.get_usr("og") or {}
                     if og:
+                        temporal = dict(og.get("temporal_context") or {})
+                        temporal["observation_version"] = self.observation_version
+                        extra = dict(og.get("skill_specific") or {})
+                        extra["confirmed_progress"] = list(self._evo_skill.confirmed_effects)
+                        extra["last_effect"] = {
+                            "expected": self._evo_skill.expected_effect(last_action),
+                            "verified": bool(message),
+                        }
                         og["temporal_context"] = temporal
                         og["skill_specific"] = extra
-                        ch._usr["og"] = og
+                        ch.publish("og", og, producer="effect_verified_skill", episode_step=self.observation_version)
                 except Exception:
                     pass
         
