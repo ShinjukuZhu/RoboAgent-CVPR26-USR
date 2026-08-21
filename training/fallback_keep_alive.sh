@@ -20,26 +20,20 @@ ensure_xvfb() {
 }
 
 relaunch_aw() {
-  local n
-  n=$(wc -l < "$RUN/usr_fb_aw_ood-eval_out_of_distribution/results.jsonl" | tr -d ' ')
-  [ "$n" -ge 134 ] && return 0
+  local unique
+  unique=$("$ENV_BIN/python" - <<'PY'
+import json
+from pathlib import Path
+p=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/results.jsonl")
+ids={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()} if p.exists() else set()
+print(len(ids))
+PY
+)
+  [ "$unique" -ge 134 ] && return 0
   pgrep -f "runs/usr_minstd_skillopt/usr_fb_aw_ood " >/dev/null && return 0
-  ensure_xvfb 96
-  echo "$(date -Is) relaunch AW from $n" >>"$LOG"
-  cd "$CODE"
-  nohup env -u LD_LIBRARY_PATH \
-    CUDA_VISIBLE_DEVICES=1 DISPLAY=:96 ALFWORLD_DATA=$ROOT/data/alfworld \
-    PATH=$ENV_BIN:$PATH PYTHONUNBUFFERED=1 \
-    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-    FALLBACK_USR_SKILLOPT_AUTHORIZED=1 \
-    ROBOAGENT_OG_BACKEND=llmdet_qwen_usr ROBOAGENT_EG_BACKEND=qwen \
-    ROBOAGENT_SD_BACKEND=usr ROBOAGENT_USR_CHANNEL=1 \
-    ROBOAGENT_LLMDET_PATH=$ROOT/ckpt/llmdet_large ROBOAGENT_LLMDET_THRESHOLD=0.35 \
-    ROBOAGENT_EVO_SKILL=$SKILL \
-    python -u run_aw.py --qwen_path "$ROOT/ckpt/RoboAgent_CVPR26" \
-      --save_path "$RUN/usr_fb_aw_ood" --split eval_out_of_distribution \
-      --start "$n" --end 134 --seed 42 \
-    >> "$RUN/logs/aw_ood_skill.log" 2>&1 &
+  pgrep -f "aw_fill_missing.sh" >/dev/null && return 0
+  echo "$(date -Is) relaunch AW fill_missing (unique=$unique)" >>"$LOG"
+  nohup bash "$CODE/training/aw_fill_missing.sh" >>"$RUN/logs/aw_fill_missing.log" 2>&1 &
 }
 
 relaunch_eb() {
