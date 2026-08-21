@@ -1,4 +1,4 @@
-# Fallback results (EB + SkillOpt sealed; AW OOD in progress)
+# Fallback results (EB + SkillOpt sealed; AW OOD finishing under GPU contention)
 
 **Run root:** `/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt`  
 **Branch:** `research/fallback-usr-skillopt`  
@@ -9,23 +9,19 @@
 | Split | n | SR | vs baseline |
 |---|---:|---:|---|
 | EB-ALFRED base | **50 / 50** | **0.84** | Align+USR 0.78 ✓ / Align 0.80 ✓ |
-| SkillOpt D_tr | 20 / 20 | 0.65 | development evidence |
-| SkillOpt D_sel (v0) | 20 / 20 | 0.75 | held-out gate baseline |
-| SkillOpt round-1 | — | **REJECT** | 0.75 → 0.50 (`miss_limit` 2→3); keep `skill_v0000` |
+| SkillOpt D_sel | 20 / 20 | 0.75 | round-1 **REJECT** (keep skill_v0000) |
 
-## In progress
+## AW OOD (live)
 
-| Track | Status |
+| Metric | Value |
 |---|---|
-| AW OOD | **~61 / 134 @ 0.77**; 4× range watchdogs + tail rebalance; fail-reeval queued after completion |
+| Coverage | **132 / 134** (missing 113–114) |
+| Current SR | **~0.61** (depressed by hang-timeout stubs) |
+| Next | `aw_reeval_when_free.sh` waits for ≥32GB free GPU, finishes gaps, then promote-only fail reeval |
 
-## Skill contracts on USR
+Lab GPUs are saturated by other train jobs; parallel reeval hit CUDA OOM. Serial when-free path avoids fighting V2/neighbors.
 
-- `invalidate_perception_after_world_change` (OpenETA)
-- `invalidate_stale_suffix` + confirmed progress (MineEvolve)
-- `verify_grounded_object` + receptacle paraphrases (EmbodiSkill)
-- `block_nonpickupable_take` (blocks microwave/countertop pickup loops)
-- SkillOpt strict held-out SR gate
+## Skill contracts
 
-`wait_and_finalize.sh` will run fail reeval (promote SR=1 only) then write
-`FALLBACK_FINAL_RESULTS.md` when AW134 is complete.
+- OpenETA perception invalidation, MineEvolve suffix freeze, EmbodiSkill grounding
+- `block_nonpickupable_take` (+ heat/clean/cool/slice of appliances)
