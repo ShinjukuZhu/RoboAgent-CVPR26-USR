@@ -111,6 +111,11 @@ DEFAULT_ALIASES = {
     "tvstand": "dresser",
     "television stand": "dresser",
     "televisionstand": "dresser",
+    # EB paraphrase: "microwave oven table" is the side table by the microwave.
+    "microwave oven table": "sidetable",
+    "microwaveoventable": "sidetable",
+    "oven table": "sidetable",
+    "oventable": "sidetable",
 }
 
 # Compact-form clusters: paraphrases of one class, not distinct fixtures.
@@ -125,6 +130,7 @@ RECEPTACLE_PARAPHRASE_CLUSTERS = (
     frozenset({"soapbar", "barofsoap"}),
     frozenset({"remotecontrol", "tvremote", "remote"}),
     frozenset({"countertop", "kitchenisland", "island"}),
+    frozenset({"sidetable", "microwaveoventable", "oventable"}),
 )
 
 
@@ -212,9 +218,12 @@ class EvoSkillSpec:
 
     def canonical_object(self, value: str) -> str:
         raw = str(value or "").lower().replace("_", " ").replace("-", " ")
+        raw = re.sub(r"\([^)]*\)", " ", raw)
+        raw = re.sub(r"\b(hint|except)\b.*$", " ", raw, flags=re.I)
         raw = re.sub(r"\b\d+\b", " ", raw)
         raw = re.sub(r"\s+", " ", raw).strip()
-        aliased = self.aliases.get(raw, raw)
+        no_article = re.sub(r"^(the|a|an)\s+", "", raw)
+        aliased = self.aliases.get(raw, self.aliases.get(no_article, raw))
         compact = _compact(aliased)
         return _compact(self.aliases.get(compact, compact))
 

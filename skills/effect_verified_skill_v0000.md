@@ -42,6 +42,8 @@ leave implicit, but that individual systems already demonstrated:
     "metal rack": "shelf",
     "kitchen island": "countertop",
     "tv stand": "dresser",
+    "microwave oven table": "sidetable",
+    "oven table": "sidetable",
     "apple sliced": "apple",
     "bread sliced": "bread",
     "lettuce sliced": "lettuce",

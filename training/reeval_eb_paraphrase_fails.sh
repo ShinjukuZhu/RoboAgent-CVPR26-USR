@@ -16,7 +16,7 @@ GPU=${GPU:-6}
 DISPLAY_NUM=${DISPLAY_NUM:-90}
 # Default known paraphrase false-rejects; caller may override TASKS.
 # Extra ids with grounding_effect_check verified=false are appended below.
-TASKS=${TASKS:-"1 7 19 22 25 28 29 37"}
+TASKS=${TASKS:-"1 7 19 22 25 28 29 37 46"}
 OUT=$RUN/eb_paraphrase_reeval
 mkdir -p "$OUT" "$RUN/logs"
 cd "$CODE"
