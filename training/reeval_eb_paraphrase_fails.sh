@@ -11,15 +11,54 @@ ENV_BIN=$ROOT/envs/RoboAgent_AW/bin
 EB_ROOT=$ROOT/code/EmbodiedBench
 EB_DATA=$EB_ROOT/embodiedbench/envs/eb_alfred/data/splits/splits.json
 SKILL=$CODE/skills/effect_verified_skill_v0000.md
-GPU=${GPU:-5}
-DISPLAY_NUM=${DISPLAY_NUM:-97}
-# Tasks failed with false grounding rejects (table/fridge/remote/soap/island/tvstand).
+# Prefer a free GPU; GPU5 is often taken by V2 probes.
+GPU=${GPU:-6}
+DISPLAY_NUM=${DISPLAY_NUM:-90}
+# Default known paraphrase false-rejects; caller may override TASKS.
+# Extra ids with grounding_effect_check verified=false are appended below.
 TASKS=${TASKS:-"1 7 19 22 25 28 29 37"}
 OUT=$RUN/eb_paraphrase_reeval
 mkdir -p "$OUT" "$RUN/logs"
 cd "$CODE"
 export FALLBACK_USR_SKILLOPT_AUTHORIZED=1
 
+# Ensure display
+if [ ! -S "/tmp/.X11-unix/X${DISPLAY_NUM}" ]; then
+  /mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb ":${DISPLAY_NUM}" -screen 0 1280x1024x24 -ac +extension GLX +render -noreset >/dev/null 2>&1 &
+  sleep 2
+fi
+
+# Auto-extend TASKS with sealed fails that logged a hard grounding reject.
+AUTO=$($ENV_BIN/python - <<'PY'
+import json
+from pathlib import Path
+root = Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_eb50-base")
+rows = []
+p = root / "results.jsonl"
+if p.exists():
+    rows = [json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+fails = [int(r["task_idx"]) for r in rows if not int(r.get("SR") or 0)]
+extra = []
+for tid in fails:
+    ep = root / f"episode_{tid}"
+    if not ep.exists():
+        continue
+    for f in ep.rglob("*"):
+        if not f.is_file() or f.stat().st_size > 2_000_000:
+            continue
+        try:
+            text = f.read_text(errors="ignore")
+        except Exception:
+            continue
+        if "grounding_effect_check" in text and '"verified": false' in text:
+            extra.append(tid)
+            break
+print(" ".join(str(i) for i in sorted(set(extra))))
+PY
+)
+# merge unique
+TASKS=$(echo "$TASKS $AUTO" | tr ' ' '\n' | awk 'NF' | sort -n | uniq | tr '\n' ' ')
+echo "REEVAL_TASKS=$TASKS"
 for tid in $TASKS; do
   start=$tid
   end=$((tid + 1))
