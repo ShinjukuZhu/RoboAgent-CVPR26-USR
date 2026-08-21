@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT=/mnt/autodl_tmp1/zhuyanhao
 RUN=$ROOT/runs/fallback_usr_skillopt
 while true; do
+  set +e
   /mnt/autodl_tmp1/zhuyanhao/envs/RoboAgent_AW/bin/python - <<'PY'
 import json
 from pathlib import Path
@@ -38,6 +39,7 @@ print(json.dumps(payload))
 raise SystemExit(0 if ready else 1)
 PY
   status=$?
+  set -e
   if [[ $status -eq 0 ]]; then
     echo "FINAL_READY $(date -Is)" | tee -a "$RUN/logs/finalize.log"
     exit 0
