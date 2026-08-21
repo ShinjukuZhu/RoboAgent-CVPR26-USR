@@ -12,23 +12,21 @@ TIMEOUT_SEC=${TIMEOUT_SEC:-1200}
 LOG=$RUN/logs/aw_fill_missing.log
 mkdir -p "$RUN/logs"
 
-# Do not fight the long-range main worker if it is healthy on the same GPU.
-pkill -f "runs/usr_minstd_skillopt/usr_fb_aw_ood " || true
-sleep 2
+# Do not pkill sibling fills; keep-alive already owns long-range restarts.
 
 if [ ! -S "/tmp/.X11-unix/X${DISPLAY_NUM}" ]; then
   /mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb ":${DISPLAY_NUM}" -screen 0 1280x1024x24 -ac +extension GLX +render -noreset >/dev/null 2>&1 &
   sleep 2
 fi
 
-TASKS=$("$ENV_BIN/python" - <<'PY'
+ONLY_FROM=${ONLY_FROM:-52}
+ONLY_TO=${ONLY_TO:-70}
+TASKS=$("$ENV_BIN/python" - <<PY
 import json
 from pathlib import Path
 p=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/usr_fb_aw_ood-eval_out_of_distribution/results.jsonl")
 ids={int(json.loads(x)["task_idx"]) for x in p.read_text().splitlines() if x.strip()} if p.exists() else set()
-# Prefer mid-gap first; shards cover 70+ / 90+.
-prefer=[i for i in range(52, 70) if i not in ids]
-# Live shards own 70–134; only fill the mid-gap here.
+prefer=[i for i in range(int("$ONLY_FROM"), int("$ONLY_TO")) if i not in ids]
 print(" ".join(str(i) for i in prefer))
 print("unique", len(ids), "prefer", prefer)
 PY
