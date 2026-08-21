@@ -217,27 +217,12 @@ PY
     run_one_task "$gpu" "$next_miss" finish
     continue
   fi
-  if [ "$fail_n" != "0" ] && [ -n "$next_fail" ]; then
-    run_one_task "$gpu" "$next_fail" reeval
-    # mark attempted
-    echo "$next_fail" >> "$RUN/aw_fail_reeval_free/attempted.txt"
-    # if all fails attempted once, stop
-    "$ENV_BIN/python" - <<'PY'
-import json
-from pathlib import Path
-r=Path("/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt")
-main=r/"usr_fb_aw_ood-eval_out_of_distribution/results.jsonl"
-rows={int(json.loads(x)["task_idx"]):json.loads(x) for x in main.read_text().splitlines() if x.strip()}
-fails=set(i for i,row in rows.items() if int(row.get("SR") or 0)==0)
-att=set()
-p=r/"aw_fail_reeval_free/attempted.txt"
-if p.exists():
-    att={int(x) for x in p.read_text().split() if x.strip().isdigit()}
-if fails and fails <= att:
-    (r/"aw_fail_reeval_free/.pass_done").write_text("1\n")
-    print("PASS_DONE")
-PY
-    continue
+  # After unique set is complete, promote hang stubs in chunks (one model load per chunk).
+  if [ "$miss_n" = "0" ] && [ "$fail_n" != "0" ] && [ ! -f "$RUN/aw_fail_reeval_free/.pass_done" ]; then
+    echo "$(date -Is) hand off to stub batch reeval on GPU$gpu" | tee -a "$LOG"
+    FORCE_GPU=$gpu TIMEOUT_SEC=${BATCH_TIMEOUT_SEC:-14400} CHUNK=${CHUNK:-8} \
+      bash "$CODE/training/aw_stub_batch_reeval.sh" | tee -a "$LOG" || true
+    break
   fi
   sleep "$POLL_SEC"
 done

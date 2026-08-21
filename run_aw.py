@@ -25,6 +25,8 @@ import alfworld.agents.modules.generic as generic
 parser = argparse.ArgumentParser()
 parser.add_argument("--start", type=int, default=0)
 parser.add_argument("--end", type=int, default=200)
+parser.add_argument("--tasks", type=str, default="",
+                    help="Comma-separated task indices; overrides --start/--end when set")
 parser.add_argument("--split", type=str, default='eval_out_of_distribution')
 parser.add_argument("--save_path", type=str, default='imgs/AW_eval')
 parser.add_argument("--qwen_path", type=str, default='../CKPT')
@@ -57,6 +59,10 @@ if __name__ == "__main__":
         "eval_in_distribution": 140, "eval_out_of_distribution": 134
     }[SPLIT]
     SHUFFLE = False
+    if args.tasks.strip():
+        task_set = {int(x) for x in args.tasks.split(",") if x.strip().isdigit()}
+    else:
+        task_set = set(range(START, END))
     
     save_path = args.save_path + "-" + SPLIT
 
@@ -69,9 +75,7 @@ if __name__ == "__main__":
     agent = Agent(args.qwen_path)
 
     for i_episode in range(LEN):
-        if i_episode >= END:
-            break
-        if i_episode < START:
+        if i_episode not in task_set:
             continue
         
         obs, info = env.reset(i=i_episode)
