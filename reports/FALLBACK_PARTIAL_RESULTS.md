@@ -1,8 +1,9 @@
-# Fallback results (EB sealed; AW post-reeval)
+# Fallback results (EB sealed; AW reeval in progress)
 
 **Run root:** `/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt`  
 **Branch:** `research/fallback-usr-skillopt`  
-**Survey:** `reports/FALLBACK_MIN_STANDARD.md`
+**Survey:** `reports/FALLBACK_MIN_STANDARD.md`  
+**Final (live):** `reports/FALLBACK_FINAL_RESULTS.md`
 
 ## Sealed (verified)
 
@@ -13,18 +14,17 @@
 | SkillOpt D_sel v0 | 20 / 20 | 0.75 | held-out gate |
 | SkillOpt round-1 | — | **REJECT** | keep `skill_v0000`; history sealed |
 
-## AW OOD (134/134; stub batch finishing)
+## AW OOD (134/134; tail reeval running)
 
 | Metric | Value |
 |---|---|
 | Coverage | **134 / 134** |
-| SR (live) | **0.6791** (91/134) — up from 0.606 pre-reeval |
-| Promoted so far | **9** hang-stub tasks via `aw_stub_batch_reeval.sh` |
-| vs Native 0.81 | still below |
-| vs Align 0.84 | still below — need ~22 more successes for parity |
-| Ops | last chunk `125,126,127,128,130` running; then re-finalize |
-
-Early `FALLBACK_FINAL_RESULTS.md` (SR 0.664) was written before later chunks promoted; wait for stub batch + `wait_and_finalize.sh` for the sealed final.
+| SR (official merged) | **0.6791** (91/134) |
+| Pre-reeval SR | 0.606 (hang stubs depressed score) |
+| Promoted via stub batch | **9** tasks |
+| vs Native 0.81 | below |
+| vs Align 0.84 | below |
+| Ops | `aw_tail_stubs_reeval.py` finishing ids 125–130 |
 
 ## Skill landed on USR
 

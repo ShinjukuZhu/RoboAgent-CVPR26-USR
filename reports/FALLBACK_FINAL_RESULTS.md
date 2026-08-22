@@ -10,7 +10,7 @@ Survey / reproduced-workload analysis: `reports/FALLBACK_MIN_STANDARD.md`.
 
 | Split | n | SR | Reference to beat |
 |---|---:|---:|---|
-| AW OOD | 134 | 0.6642 | Align 0.84 / Native 0.81 |
+| AW OOD | 134 | 0.6791 | Align 0.84 / Native 0.81 |
 | EB base | 50 | 0.8400 | Align+USR 0.78 / Align 0.80 |
 
 AW vs Align: BELOW Align 0.84 — inspect failures
