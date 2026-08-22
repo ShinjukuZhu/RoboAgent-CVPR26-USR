@@ -554,12 +554,13 @@ class EffectVerifiedSkill:
             self._goal_stall_count = 0
             return None
         self._goal_stall_count += 1
-        if self._goal_stall_count < self.spec.repeated_effect_miss_limit:
+        limit = self._goal_stall_limit(current)
+        if self._goal_stall_count < limit:
             return None
         reason = (
             f"Goal progress stalled at GCR={current:.3f} after "
-            f"{self._goal_stall_count} successful world-changing action(s) "
-            f"without improvement. {self.spec.recovery_instruction}"
+            f"{self._goal_stall_count} successful action(s) "
+            f"without improvement (limit={limit}). {self.spec.recovery_instruction}"
         )
         self._request_replan(reason)
         self._trace(
@@ -573,6 +574,13 @@ class EffectVerifiedSkill:
             reason=reason,
             invalidate_suffix=self.spec.invalidate_stale_suffix,
         )
+
+    def _goal_stall_limit(self, gcr: float) -> int:
+        base = int(self.spec.repeated_effect_miss_limit)
+        # Multi-subgoal tasks often need several successful steps at fixed GCR.
+        if float(gcr) > 1e-9:
+            return base + 4
+        return base
 
     def consume_replan_request(self) -> Optional[str]:
         if not self._replan_requested:

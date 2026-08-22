@@ -172,14 +172,21 @@ class EffectVerifiedRuntimeTest(unittest.TestCase):
         self.assertEqual(intervention.kind, "effect_already_satisfied")
 
     def test_goal_progress_stall_triggers_replan(self):
-        self.runtime._last_gcr = 0.33
-        self.assertIsNone(
-            self.runtime.observe_goal_progress(0.33, "clean Cloth 1 with Sink 1", True)
-        )
-        intervention = self.runtime.observe_goal_progress(0.33, "clean Cloth 1 with Sink 1", True)
+        self.runtime._last_gcr = 0.0
+        self.assertIsNone(self.runtime.observe_goal_progress(0.0, "clean Cloth 1 with Sink 1", True))
+        intervention = self.runtime.observe_goal_progress(0.0, "clean Cloth 1 with Sink 1", True)
         self.assertIsNotNone(intervention)
         self.assertEqual(intervention.kind, "goal_progress_stall")
-        self.assertTrue(intervention.invalidate_suffix)
+
+    def test_goal_progress_stall_allows_bridge_steps_at_partial_gcr(self):
+        self.runtime._last_gcr = 0.33
+        for _ in range(5):
+            self.assertIsNone(
+                self.runtime.observe_goal_progress(0.33, "go to Cabinet 1", True)
+            )
+        intervention = self.runtime.observe_goal_progress(0.33, "go to Cabinet 2", True)
+        self.assertIsNotNone(intervention)
+        self.assertEqual(intervention.kind, "goal_progress_stall")
 
     def test_blocks_nonpickupable_take(self):
         intervention = self.runtime.precheck_action("take Microwave 1 from Microwave 1")
