@@ -13,9 +13,19 @@ Survey / reproduced-workload analysis: `reports/FALLBACK_MIN_STANDARD.md`.
 | AW OOD | 134 | 0.6791 | Align 0.84 / Native 0.81 |
 | EB base | 50 | 0.8400 | Align+USR 0.78 / Align 0.80 |
 
-AW vs Align: BELOW Align 0.84 — inspect failures
+AW vs Align: BELOW Align 0.84 — skillfix reeval running (loop-break + no step cap)
 EB vs Align+USR: PASS (≥0.78)
 EB vs Align: PASS (≥0.80)
+
+## AW optimization (in flight)
+
+Root cause on remaining failures:
+- 37 zero-GCR episodes include hang stubs and futile action loops (e.g. repeated
+  `clean` without GCR gain; task 125 hit the old 60-step cap).
+- Fix deployed in `8cc923b`: skip confirmed clean/heat/cool/slice, GCR-stall
+  suffix invalidation, remove 60-step reeval cap.
+- `training/aw_fail_skillfix_reeval.py` reevaluates priority fail ids on GPU7
+  (excluding tail/pass2 tasks still running).
 
 ## SkillOpt
 
