@@ -21,13 +21,21 @@ XVFB = Path("/mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb")
 
 
 def ensure_display(disp: int):
-    if not Path(f"/tmp/.X11-unix/X{disp}").exists():
+    sock = Path(f"/tmp/.X11-unix/X{disp}")
+    if not sock.exists():
         subprocess.Popen(
             [str(XVFB), f":{disp}", "-screen", "0", "1280x1024x24", "-ac", "+extension", "GLX", "+render", "-noreset"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        time.sleep(2)
+        time.sleep(3)
+    rc = subprocess.call(
+        "xdpyinfo >/dev/null 2>&1",
+        shell=True,
+        env={**os.environ, "DISPLAY": f":{disp}"},
+    )
+    if rc != 0:
+        raise RuntimeError(f"DISPLAY :{disp} not ready (xdpyinfo rc={rc})")
 
 
 def pick_gpu():
