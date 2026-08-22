@@ -13,11 +13,25 @@ ALFWORLD_DATA=${ALFWORLD_DATA:-$ROOT/data/alfworld}
 OUT=$RUN/skillopt_round2
 DEV_DIR=$OUT/dev-eval_in_distribution
 DEV_LOG=$RUN/logs/skillopt_round2_dev.log
+XVFB=$ROOT/xorg-prefix/usr/bin/Xvfb
 mkdir -p "$OUT" "$RUN/logs"
 cd "$CODE"
 export FALLBACK_USR_SKILLOPT_AUTHORIZED=1
 
-# Fresh development trajectories (D_tr 0-19) with current executor/skill.
+ensure_display() {
+  local disp=$1
+  if [[ ! -S /tmp/.X11-unix/X${disp} ]] && [[ -x $XVFB ]]; then
+    "$XVFB" ":${disp}" -screen 0 1280x1024x24 -ac +extension GLX +render -noreset \
+      >/dev/null 2>&1 &
+    sleep 3
+  fi
+  DISPLAY=:${disp} xdpyinfo >/dev/null 2>&1 || {
+    echo "DISPLAY :${disp} not ready" >&2
+    exit 1
+  }
+}
+
+ensure_display "$DISPLAY_NUM"
 rm -rf "$DEV_DIR"
 env -u LD_LIBRARY_PATH \
   CUDA_VISIBLE_DEVICES=$GPU DISPLAY=:$DISPLAY_NUM ALFWORLD_DATA=$ALFWORLD_DATA PATH=$ENV_BIN:$PATH \
