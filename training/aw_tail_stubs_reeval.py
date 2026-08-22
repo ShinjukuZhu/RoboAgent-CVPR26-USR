@@ -16,7 +16,7 @@ SKILL = CODE / "skills/effect_verified_skill_v0000.md"
 MAIN = RUN / "usr_fb_aw_ood-eval_out_of_distribution/results.jsonl"
 ATT = RUN / "aw_fail_reeval_free/attempted.txt"
 TAIL = [125, 126, 127, 128, 130]
-TIMEOUT = int(os.environ.get("TASK_TIMEOUT_SEC", "2400"))
+TIMEOUT = int(os.environ.get("TASK_TIMEOUT_SEC", "5400"))
 
 
 def ps_lines():
