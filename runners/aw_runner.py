@@ -1,4 +1,5 @@
 import sys
+import os
 
 from agents.agent import Agent
 from alfworld.agents.environment.alfred_thor_env import AlfredThorEnv
@@ -14,6 +15,9 @@ class AWRunner():
         
     def run(self, ):
         steps = 0
+        max_steps = int(os.environ.get("ROBOAGENT_MAX_AW_STEPS", "0") or 0)
+        hit_step_cap = False
+        done = False
         while True:
             actions, _ = self.agent.get_qwen_action()
             
@@ -31,13 +35,17 @@ class AWRunner():
                         continue
                     print(f"--------------------[ENV STEP {steps}]: {action}\n")
                     steps += 1
+                    if max_steps and steps >= max_steps:
+                        gcr = self.last_info.get("goal_condition_success_rate", [0])[0] if self.last_info else 0
+                        hit_step_cap = True
+                        break
                 done, info = self.execute(action)
                 if done:
                     gcr = info["goal_condition_success_rate"][0]
                     break
                 if self.agent.consume_evo_interrupt():
                     break
-            if done or action == "fail":
+            if done or action == "fail" or hit_step_cap:
                 break
         return gcr
        
