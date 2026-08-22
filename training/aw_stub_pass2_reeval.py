@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 ROOT = Path("/mnt/autodl_tmp1/zhuyanhao")
@@ -16,6 +17,17 @@ OUT = RUN / "aw_fail_reeval_free/stub_pass2"
 TIMEOUT = int(os.environ.get("TASK_TIMEOUT_SEC", "3600"))
 CHUNK = int(os.environ.get("CHUNK", "5"))
 EXCLUDE = {int(x) for x in os.environ.get("EXCLUDE_TASKS", "125,126,127,128,130").split(",") if x.strip()}
+XVFB = Path("/mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb")
+
+
+def ensure_display(disp: int):
+    if not Path(f"/tmp/.X11-unix/X{disp}").exists():
+        subprocess.Popen(
+            [str(XVFB), f":{disp}", "-screen", "0", "1280x1024x24", "-ac", "+extension", "GLX", "+render", "-noreset"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(2)
 
 
 def pick_gpu():
@@ -96,7 +108,8 @@ def merge_promote(tid: int, cand_dir: Path):
 
 
 def run_chunk(gpu: int, free: int, tasks: list[int]):
-    disp = {1: 96, 4: 94, 6: 97, 7: 95}.get(gpu, 90 + gpu)
+    disp = {1: 96, 2: 92, 4: 94, 6: 97, 7: 95}.get(gpu, 90 + gpu)
+    ensure_display(disp)
     tag = f"chunk_{tasks[0]}_{tasks[-1]}"
     cand_root = OUT / tag
     cand_root.mkdir(parents=True, exist_ok=True)
