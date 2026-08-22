@@ -157,7 +157,7 @@ def run_chunk(gpu: int, free: int, tasks: list[int]):
                 "PYTHONUNBUFFERED": "1",
                 "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
                 "ROBOAGENT_MAX_GPU_MIB": str(min(free, 45000)),
-                "ROBOAGENT_MAX_AW_STEPS": "60",
+                "ROBOAGENT_MAX_AW_STEPS": os.environ.get("ROBOAGENT_MAX_AW_STEPS", "0"),
                 "FALLBACK_USR_SKILLOPT_AUTHORIZED": "1",
                 "ROBOAGENT_OG_BACKEND": "llmdet_qwen_usr",
                 "ROBOAGENT_EG_BACKEND": "qwen",

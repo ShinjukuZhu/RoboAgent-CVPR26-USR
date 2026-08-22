@@ -130,7 +130,7 @@ class Agent(object):
             self._evo_skill.set_task(task_instruction)
         return
     
-    def process_feedback(self, message, last_action):
+    def process_feedback(self, message, last_action, gcr=None):
         assert last_action not in ["examine", "pass", "do nothing"]
         if self.env_name == "alfworld":
             assert last_action.split(" ")[0] in ["take", "open", "close", "put", "slice", "heat", "cool", "clean", "go", "use"], last_action
@@ -146,6 +146,10 @@ class Agent(object):
             intervention = self._evo_skill.observe_action_result(last_action, bool(message))
             if intervention is not None:
                 self._activate_evo_intervention(intervention.reason, intervention.invalidate_suffix)
+            if gcr is not None:
+                stall = self._evo_skill.observe_goal_progress(gcr, last_action, bool(message))
+                if stall is not None:
+                    self._activate_evo_intervention(stall.reason, stall.invalidate_suffix)
             if os.environ.get("ROBOAGENT_USR_CHANNEL", "0") == "1":
                 try:
                     ch = get_channel()

@@ -324,6 +324,8 @@ class EffectVerifiedSkill:
         self.confirmed_effects: List[str] = []
         self.unverified_effects: List[str] = []
         self._failure_counts: Dict[str, int] = {}
+        self._last_gcr = 0.0
+        self._goal_stall_count = 0
         self._replan_requested = False
         self._replan_reason = ""
         self._scheduler_context_pending = False
@@ -342,6 +344,8 @@ class EffectVerifiedSkill:
         self.confirmed_effects.clear()
         self.unverified_effects.clear()
         self._failure_counts.clear()
+        self._last_gcr = 0.0
+        self._goal_stall_count = 0
         self._replan_requested = False
         self._replan_reason = ""
         self._scheduler_context_pending = False
@@ -375,7 +379,18 @@ class EffectVerifiedSkill:
         if not effect or effect not in self.confirmed_effects:
             return None
         kind = effect.split("(", 1)[0]
-        if kind not in {"at", "open", "closed", "on", "off", "holding"}:
+        if kind not in {
+            "at",
+            "open",
+            "closed",
+            "on",
+            "off",
+            "holding",
+            "clean",
+            "heated",
+            "cooled",
+            "sliced",
+        }:
             return None
         reason = f"Skip redundant action; effect is already confirmed: {effect}."
         self._trace(
@@ -523,6 +538,38 @@ class EffectVerifiedSkill:
         self._request_replan(reason)
         return SkillIntervention(
             kind="effect_unverified",
+            reason=reason,
+            invalidate_suffix=self.spec.invalidate_stale_suffix,
+        )
+
+    def observe_goal_progress(
+        self, gcr: float, action: str, success: bool
+    ) -> Optional[SkillIntervention]:
+        """Invalidate suffix when successful actions no longer raise GCR."""
+        if not success:
+            return None
+        current = float(gcr)
+        if current > self._last_gcr + 1e-9:
+            self._last_gcr = current
+            self._goal_stall_count = 0
+            return None
+        self._goal_stall_count += 1
+        if self._goal_stall_count < self.spec.repeated_effect_miss_limit:
+            return None
+        reason = (
+            f"Goal progress stalled at GCR={current:.3f} after "
+            f"{self._goal_stall_count} successful world-changing action(s) "
+            f"without improvement. {self.spec.recovery_instruction}"
+        )
+        self._request_replan(reason)
+        self._trace(
+            "goal_progress_stall",
+            gcr=current,
+            action=action,
+            stall_count=self._goal_stall_count,
+        )
+        return SkillIntervention(
+            kind="goal_progress_stall",
             reason=reason,
             invalidate_suffix=self.spec.invalidate_stale_suffix,
         )

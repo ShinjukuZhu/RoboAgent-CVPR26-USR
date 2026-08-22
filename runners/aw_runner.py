@@ -69,7 +69,12 @@ class AWRunner():
         else:
             _, scores, dones, info = self.env_step(action_str)
             done = dones[0]
-            self.agent.process_feedback("Nothing happen" not in _[0], action_str.replace(" None", ""))
+            gcr = info.get("goal_condition_success_rate", [0])[0]
+            self.agent.process_feedback(
+                "Nothing happen" not in _[0],
+                action_str.replace(" None", ""),
+                gcr=gcr,
+            )
             self.last_info = info
         return done, info
         

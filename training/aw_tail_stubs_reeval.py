@@ -163,7 +163,7 @@ def main():
                     "ROBOAGENT_LLMDET_PATH": str(ROOT / "ckpt/llmdet_large"),
                     "ROBOAGENT_LLMDET_THRESHOLD": "0.35",
                     "ROBOAGENT_EVO_SKILL": str(SKILL),
-                    "ROBOAGENT_MAX_AW_STEPS": os.environ.get("ROBOAGENT_MAX_AW_STEPS", "60"),
+                    "ROBOAGENT_MAX_AW_STEPS": os.environ.get("ROBOAGENT_MAX_AW_STEPS", "0"),
                 },
             )
         print("rc", tid, rc)
