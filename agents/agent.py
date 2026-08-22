@@ -19,7 +19,7 @@ from agents.eg_lora_backend import propose_eg_lora as explore_eg_lora
 from agents.usr_channel import get_channel, reset_channel
 from agents.skill_alignment_og import ground_aligned as llmdet_qwen_aligned_ground
 from agents.naive_detector import ground_naive as naive_detector_ground
-from agents.eg_llm_backend import propose_eg, propose_eg_ft_qwen
+from agents.eg_llm_backend import propose_eg, propose_eg_ft_qwen, exploration_exhausted
 from agents.skill_memory import SkillMemory, env_mode as skill_memory_env_mode
 from agents.evo_skill import EffectVerifiedSkill
 from agents.florence2_sd import describe_naive, describe_adapter
@@ -364,9 +364,12 @@ class Agent(object):
                 parsed_q.append(q)
             queries = parsed_q
             for iq, query in enumerate(queries):
+                if "(" not in query:
+                    continue
                 ability_name = query.split("(")[0].strip()
                 args = "(".join(query.split("(")[1:])
-                assert args.endswith(")"), args
+                if not args.endswith(")"):
+                    continue
                 args = args[:-1]
                 self.ability_buffer.append([ability_name, args])
             return True
@@ -460,6 +463,18 @@ class Agent(object):
                 self.explored = []
             target_obj = args
             eg_backend = os.environ.get("ROBOAGENT_EG_BACKEND", "qwen").strip().lower()
+            if exploration_exhausted(
+                self.observed_objects_list, self.explored, self.env_name
+            ):
+                append_trace(self.save_path, {
+                    "event": "ability_parsed",
+                    "role": "exploration_guidance",
+                    "backend": eg_backend,
+                    "args": target_obj,
+                    "parsed": None,
+                    "reason": "exploration_exhausted",
+                })
+                return None
             if eg_backend in ("explore_naive", "naive_explore"):
                 place = explore_eg_naive(
                     target_obj, self.observed_objects_list, self.explored,

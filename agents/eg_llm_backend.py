@@ -48,14 +48,32 @@ def _normalize_obj(name: str, env_name: str) -> str:
     return s
 
 
+_EG_RELATIONS = frozenset({"in", "on", "target", "near"})
+
+
 def legal_objects(
     observed_objects: Sequence[str],
     explored: Sequence[str],
     env_name: str,
 ) -> Set[str]:
+    """Objects that still admit at least one unexplored relation."""
     obs = {_normalize_obj(x, env_name) for x in observed_objects if str(x).strip()}
-    exp = {_normalize_obj(x, env_name) for x in explored if str(x).strip()}
-    return obs - exp
+    tried = {str(x).lower() for x in explored if str(x).strip()}
+    out: Set[str] = set()
+    for obj in obs:
+        for rel in _EG_RELATIONS:
+            if f"{rel} {obj}" not in tried:
+                out.add(obj)
+                break
+    return out
+
+
+def exploration_exhausted(
+    observed_objects: Sequence[str],
+    explored: Sequence[str],
+    env_name: str,
+) -> bool:
+    return not legal_objects(observed_objects, explored, env_name)
 
 
 def parse_eg_response(
