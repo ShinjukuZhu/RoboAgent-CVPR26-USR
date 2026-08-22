@@ -139,11 +139,13 @@ def evaluate_trajectories(run_dir: Path, baseline_run: Optional[Path] = None) ->
                 "evo_suffix_invalidated",
                 "action_precondition_check",
                 "perception_stale_after_world_change",
+                "goal_progress_stall",
             }:
                 continue
             if event.get("verified") is False or name in {
                 "evo_suffix_invalidated",
                 "perception_stale_after_world_change",
+                "goal_progress_stall",
             }:
                 counts[name] = counts.get(name, 0) + 1
                 examples.setdefault(name, [])
@@ -243,6 +245,14 @@ def propose_from_evidence(
             "recovery_instruction": (
                 "Re-observe, preserve confirmed progress, change viewpoint or "
                 "target instance, then replan only the unfinished suffix."
+            )
+        })
+    if counts.get("goal_progress_stall", 0) >= 2:
+        candidates.append({
+            "recovery_instruction": (
+                "Goal progress stalled: re-observe the scene, change target or "
+                "viewpoint, preserve confirmed progress, and replan only the "
+                "unfinished suffix. Do not repeat actions that did not raise GCR."
             )
         })
     for edits in candidates:
