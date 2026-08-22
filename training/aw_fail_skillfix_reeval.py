@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Promote-only reeval for AW OOD failures after skill-loop fixes."""
+import atexit
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -15,6 +17,9 @@ SKILL = CODE / "skills/effect_verified_skill_v0000.md"
 MAIN = RUN / "usr_fb_aw_ood-eval_out_of_distribution/results.jsonl"
 OUT = RUN / "aw_fail_reeval_free/skillfix"
 TIMEOUT = int(os.environ.get("TASK_TIMEOUT_SEC", "5400"))
+XVFB = Path("/mnt/autodl_tmp1/zhuyanhao/xorg-prefix/usr/bin/Xvfb")
+sys.path.insert(0, str(CODE / "training"))
+from thor_cleanup import cleanup_thor  # noqa: E402
 EXCLUDE = {
     int(x)
     for x in os.environ.get("EXCLUDE_TASKS", "").split(",")
@@ -28,6 +33,28 @@ PRIORITY = [
     ).split(",")
     if x.strip()
 ]
+
+
+def ensure_display(disp: int):
+    sock = Path(f"/tmp/.X11-unix/X{disp}")
+    if not sock.exists() and XVFB.exists():
+        subprocess.Popen(
+            [
+                str(XVFB),
+                f":{disp}",
+                "-screen",
+                "0",
+                "1280x1024x24",
+                "-ac",
+                "+extension",
+                "GLX",
+                "+render",
+                "-noreset",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(3)
 
 
 def pick_gpu():
@@ -117,12 +144,15 @@ def run_env(gpu: int, free: int, disp: int):
 
 
 def main():
+    atexit.register(lambda: cleanup_thor("KILL"))
     tasks = fail_ids()
     if not tasks:
         print("no failing tasks")
         return
     gpu, free = pick_gpu()
-    disp = {1: 96, 4: 94, 6: 97, 7: 95}.get(gpu, 90 + gpu)
+    disp = {1: 96, 4: 94, 6: 97, 7: 95, 2: 92}.get(gpu, 90 + gpu)
+    ensure_display(disp)
+    cleanup_thor("KILL")
     print(f"gpu={gpu} free={free}MiB disp=:{disp} tasks={tasks}", flush=True)
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a") as logf:
@@ -160,7 +190,9 @@ def main():
             )
             print("rc", tid, rc, flush=True)
             merge_promote(tid, out)
+            cleanup_thor("TERM")
             time.sleep(2)
+            cleanup_thor("KILL")
     subprocess.call(["bash", str(CODE / "training/finalize_fallback_results.sh")])
 
 
