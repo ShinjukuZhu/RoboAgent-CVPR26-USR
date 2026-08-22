@@ -1,11 +1,14 @@
 {
-  "aw_n": 132,
-  "miss": [
-    113,
-    114
-  ],
-  "aw_sr": 0.6061,
-  "blocker": "gpu_contention_need_50gb_free",
+  "aw_n": 134,
+  "aw_sr": 0.6791,
+  "aw_complete": true,
+  "eb_n": 50,
   "eb_sr": 0.84,
-  "skillopt": "REJECT sealed"
+  "eb_complete": true,
+  "skillopt": "REJECT sealed",
+  "reeval_running": {
+    "tail": "126-130 (task 126 in progress)",
+    "pass2": "57,58,59,61,63 (task 59 in progress)"
+  },
+  "blocker": null
 }
