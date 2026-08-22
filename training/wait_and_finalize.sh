@@ -54,8 +54,8 @@ PY
   echo "$(date -Is) aw_n=$aw_n eb_n=$eb_n hist=$hist aw_sr=$aw_sr ready=$ready_flag" | tee -a "$LOG"
   if [ "$ready_flag" = "1" ]; then
     # Wait for in-flight subset reevals if any
-    if pgrep -f 'aw_fail_reeval_subset.sh' >/dev/null || pgrep -f 'aw_fail_reeval.sh' >/dev/null; then
-      echo "$(date -Is) waiting for fail reeval workers" | tee -a "$LOG"
+    if pgrep -f 'aw_fail_reeval_subset.sh' >/dev/null || pgrep -f 'aw_fail_reeval.sh' >/dev/null || pgrep -f 'aw_stub_batch_reeval.sh' >/dev/null || pgrep -f 'aw_reeval_when_free.sh' >/dev/null; then
+      echo "$(date -Is) waiting for AW reeval workers" | tee -a "$LOG"
       sleep 180
       continue
     fi

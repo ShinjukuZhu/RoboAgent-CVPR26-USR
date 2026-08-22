@@ -1,0 +1,144 @@
+{
+  "aw_complete": true,
+  "eb_complete": true,
+  "aw": {
+    "n": 134,
+    "SR": 0.664179104477612
+  },
+  "eb": {
+    "n": 50,
+    "SR": 0.84
+  },
+  "skillopt_dev": {
+    "n": 20,
+    "SR": 0.65
+  },
+  "baselines": {
+    "native_aw": 0.81,
+    "align_aw": 0.84,
+    "native_eb": 0.78,
+    "align_eb": 0.8,
+    "align_usr_eb": 0.78
+  },
+  "skillopt_history": [
+    {
+      "round": 1,
+      "decision": "REJECT",
+      "reason": "selection SR did not strictly rise (0.7500 -> 0.5000)",
+      "proposal": {
+        "repeated_effect_miss_limit": 3
+      },
+      "generator": "evidence",
+      "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md",
+      "candidate_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0001.md",
+      "current_SR": 0.75,
+      "candidate_SR": 0.5
+    },
+    {
+      "round": 2,
+      "decision": "SKIP",
+      "reason": "optimizer proposed no new bounded edit after round-1 reject",
+      "proposal": {},
+      "generator": "evidence",
+      "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md"
+    },
+    {
+      "round": 3,
+      "decision": "SKIP",
+      "reason": "optimizer proposed no new bounded edit after round-1 reject",
+      "proposal": {},
+      "generator": "evidence",
+      "current_skill": "/mnt/autodl_tmp1/zhuyanhao/runs/usr_minstd_skillopt/skillopt/skills/skill_v0000.md"
+    }
+  ],
+  "eb_paraphrase_reeval": {
+    "n": 50,
+    "SR": 0.84,
+    "replaced": [
+      {
+        "task_idx": 1,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 19,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      },
+      {
+        "task_idx": 22,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 25,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 26,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      },
+      {
+        "task_idx": 28,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 29,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 34,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      },
+      {
+        "task_idx": 37,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      },
+      {
+        "task_idx": 46,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 47,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      },
+      {
+        "task_idx": 5,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      },
+      {
+        "task_idx": 7,
+        "old_SR": 1,
+        "new_SR": 1,
+        "kept_old": true
+      },
+      {
+        "task_idx": 9,
+        "old_SR": 0,
+        "new_SR": 0,
+        "kept_old": true
+      }
+    ]
+  }
+}
