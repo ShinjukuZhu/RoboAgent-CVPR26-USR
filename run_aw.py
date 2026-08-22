@@ -100,12 +100,11 @@ if __name__ == "__main__":
         
         agent.process_task(None, task_instruction)
 
-        score = runner.run()
-        print(f"\n************RESULT FOR TASK {i_episode}: {score}\n")
-        try:
-            gcr = float(score) if score is not None else 0.0
-        except Exception:
-            gcr = 0.0
+        t0 = time.time()
+        outcome = runner.run()
+        wall_seconds = round(time.time() - t0, 2)
+        gcr = outcome["gcr"]
+        print(f"\n************RESULT FOR TASK {i_episode}: {gcr}\n")
         success = 1 if gcr >= 1.0 - 1e-8 else 0
         rec = {
             "task_idx": i_episode,
@@ -113,6 +112,9 @@ if __name__ == "__main__":
             "SR": success,
             "valid_run": 1,
             "episode_dir": save_path_trial,
+            "env_steps": outcome["env_steps"],
+            "wall_seconds": wall_seconds,
+            "hit_step_cap": int(outcome["hit_step_cap"]),
         }
         with open(os.path.join(save_path, "results.jsonl"), "a") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")

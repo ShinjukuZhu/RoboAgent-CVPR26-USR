@@ -38,10 +38,22 @@ eb_ok = [int(r["task_idx"]) for r in eb_rows] == list(range(50))
 def sr(rows):
     return (sum(int(r.get("SR") or 0) for r in rows) / len(rows)) if rows else None
 
+def efficiency(rows):
+    steps = [float(r["env_steps"]) for r in rows if r.get("env_steps") is not None]
+    wall = [float(r["wall_seconds"]) for r in rows if r.get("wall_seconds") is not None]
+    if not steps:
+        return None
+    return {
+        "n_with_metrics": len(steps),
+        "mean_env_steps": round(sum(steps) / len(steps), 2),
+        "mean_wall_seconds": round(sum(wall) / len(wall), 2) if wall else None,
+        "step_cap_hits": sum(int(r.get("hit_step_cap") or 0) for r in rows),
+    }
+
 payload = {
     "aw_complete": aw_ok,
     "eb_complete": eb_ok,
-    "aw": {"n": len(aw_rows), "SR": sr(aw_rows)},
+    "aw": {"n": len(aw_rows), "SR": sr(aw_rows), "efficiency": efficiency(aw_rows)},
     "eb": {"n": len(eb_rows), "SR": sr(eb_rows)},
     "skillopt_dev": {"n": len(sk_rows), "SR": sr(sk_rows)},
     "baselines": {"native_aw": 0.81, "align_aw": 0.84, "native_eb": 0.78, "align_eb": 0.80, "align_usr_eb": 0.78},
@@ -105,6 +117,15 @@ Survey / reproduced-workload analysis: `reports/FALLBACK_MIN_STANDARD.md`.
 AW vs Align: {"PASS (≥0.84)" if beats_aw else "BELOW Align 0.84 — inspect failures"}
 EB vs Align+USR: {"PASS (≥0.78)" if beats_eb else "BELOW Align+USR 0.78 — inspect failures"}
 EB vs Align: {"PASS (≥0.80)" if beats_align_eb else "BELOW Align 0.80"}
+
+## Efficiency (AW)
+
+{(
+    f"- Episodes with metrics: {payload['aw']['efficiency']['n_with_metrics']}\\n"
+    f"- Mean env steps: {payload['aw']['efficiency']['mean_env_steps']}\\n"
+    f"- Mean wall seconds: {payload['aw']['efficiency']['mean_wall_seconds']}\\n"
+    f"- Step-cap hits: {payload['aw']['efficiency']['step_cap_hits']}"
+) if payload.get("aw", {}).get("efficiency") else "- Pending (new runs record env_steps / wall_seconds)"}
 
 ## SkillOpt
 

@@ -18,6 +18,7 @@ class AWRunner():
         max_steps = int(os.environ.get("ROBOAGENT_MAX_AW_STEPS", "0") or 0)
         hit_step_cap = False
         done = False
+        gcr = 0.0
         while True:
             actions, _ = self.agent.get_qwen_action()
             
@@ -47,7 +48,11 @@ class AWRunner():
                     break
             if done or action == "fail" or hit_step_cap:
                 break
-        return gcr
+        return {
+            "gcr": float(gcr) if gcr is not None else 0.0,
+            "env_steps": steps,
+            "hit_step_cap": hit_step_cap,
+        }
        
     
     def env_step(self, action, process_obs=True, img_only=False):
